@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown, CreditCard } from 'lucide-react';
 import { createPaymentRequest, checkPendingRequest } from '../services/paymentService';
+import { createPaymentOrder, initializeRazorpayCheckout, verifyPaymentSignature } from '../services/razorpayService';
+import { creditTokensAutomatically } from '../services/autoPaymentService';
 import { User } from '../types';
 
 interface PaymentModalProps {
@@ -43,16 +45,15 @@ const TOKEN_PACKS = [
 ];
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
-    // Step 1: Select Pack, Step 2: Payment Details
+    // Step 1: Select Pack, Step 2: Razorpay Payment
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedPack, setSelectedPack] = useState(TOKEN_PACKS[1]); // Default to Pro
 
-    const [utr, setUtr] = useState('');
-    const [screenshotBase64, setScreenshotBase64] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [checking, setChecking] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [razorpayProcessing, setRazorpayProcessing] = useState(false);
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -67,70 +68,85 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
         checkStatus();
     }, [user.uid]);
 
-    // Helper: Compress Image to Base64
-    const compressImage = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const MAX_DIM = 600; // Reduced for faster processing
-                    if (width > height) {
-                        if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
-                    } else {
-                        if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.6)); // Lower quality for speed
-                };
-                img.onerror = (err) => reject(err);
-            };
-            reader.onerror = (err) => reject(err);
-        });
-    };
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            try {
-                const file = e.target.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    setError("File too large. Max 5MB.");
-                    return;
-                }
-                const compressed = await compressImage(file);
-                setScreenshotBase64(compressed);
-                setError(null);
-            } catch (err) {
-                setError("Failed to process image. Try another.");
-            }
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!utr || !screenshotBase64) {
-            setError("Please provide both UTR number and Screenshot");
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
+    // Razorpay Payment Handler
+    const handleRazorpayPayment = async () => {
         try {
-            await createPaymentRequest(user.uid, user.email || 'Unknown', selectedPack.price, selectedPack.tokens, utr, screenshotBase64);
+            setRazorpayProcessing(true);
+            setError(null);
 
+            console.log('🚀 Initiating Razorpay payment...');
+
+            // Create payment order
+            const order = await createPaymentOrder({
+                amount: selectedPack.price,
+                tokens: selectedPack.tokens,
+                userEmail: user.email || '',
+                userId: user.uid,
+                userName: user.displayName || user.email?.split('@')[0] || 'User',
+            });
+
+            // Initialize Razorpay checkout
+            initializeRazorpayCheckout(
+                order,
+                {
+                    amount: selectedPack.price,
+                    tokens: selectedPack.tokens,
+                    userEmail: user.email || '',
+                    userId: user.uid,
+                    userName: user.displayName,
+                },
+                async (response) => {
+                    // Payment successful
+                    await handlePaymentSuccess(response, order.orderId);
+                },
+                (error) => {
+                    // Payment failed/cancelled
+                    console.error('❌ Payment failed:', error);
+                    setError(error.message || 'Payment failed. Please try again.');
+                    setRazorpayProcessing(false);
+                }
+            );
+
+        } catch (error: any) {
+            console.error('❌ Razorpay error:', error);
+            setError(error.message || 'Failed to initiate payment. Please try again.');
+            setRazorpayProcessing(false);
+        }
+    };
+
+    // Handle successful Razorpay payment
+    const handlePaymentSuccess = async (response: any, orderId: string) => {
+        try {
+            console.log('✅ Payment successful, verifying...');
+
+            // Verify payment signature
+            const isValid = verifyPaymentSignature(
+                orderId,
+                response.razorpay_payment_id,
+                response.razorpay_signature
+            );
+
+            if (!isValid) {
+                throw new Error('Payment verification failed. Please contact support.');
+            }
+
+            // Credit tokens automatically
+            await creditTokensAutomatically(
+                user.uid,
+                selectedPack.tokens,
+                response.razorpay_payment_id,
+                orderId,
+                user.email || ''
+            );
+
+            console.log('🎉 Tokens credited successfully!');
             setSuccess(true);
-        } catch (e) {
-            console.error(e);
-            setError("Failed to submit request. Please try again.");
-        } finally {
-            setLoading(false);
+            setRazorpayProcessing(false);
+
+        } catch (error: any) {
+            console.error('❌ Payment success handler error:', error);
+            setError(error.message || 'Failed to credit tokens. Please contact support with your payment ID.');
+            setRazorpayProcessing(false);
         }
     };
 
@@ -259,13 +275,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
                             </div>
                         </div>
                     ) : (
+                        // Step 2: Razorpay Payment
                         <div className="space-y-6 animate-fade-in-right">
                             <button onClick={() => setStep(1)} className="text-xs text-slate-400 hover:text-white flex items-center gap-2 mb-4 transition-colors duration-300 group">
                                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-300" /> Back to Packs
                             </button>
 
                             <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-white/5 to-white/[0.02] rounded-xl border border-white/10 backdrop-blur-sm">
-                                <div className={`w - 14 h - 14 rounded - xl bg - gradient - to - br ${selectedPack.color} flex items - center justify - center shadow - lg`}>
+                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedPack.color} flex items-center justify-center shadow-lg`}>
                                     <selectedPack.icon className="w-7 h-7 text-white" />
                                 </div>
                                 <div className="flex-1">
@@ -275,70 +292,64 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
                                 <div className="text-2xl font-mono font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">₹{selectedPack.price}</div>
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="flex flex-col items-center justify-center p-8 bg-white rounded-2xl border border-slate-200 shadow-inner">
-                                    <img
-                                        src="/payment-qr.png"
-                                        alt="Payment QR"
-                                        className="w-44 h-44 object-contain"
-                                    />
-                                    <p className="text-xs text-slate-600 mt-4 font-mono font-semibold">Scan to Pay ₹{selectedPack.price}</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-300 uppercase tracking-widest block mb-2">Transaction ID (UTR)</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Enter 12-digit UTR"
-                                            value={utr}
-                                            onChange={(e) => setUtr(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-slate-600 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300 font-mono text-sm"
-                                        />
+                            {/* Razorpay Payment Section */}
+                            <div className="space-y-6">
+                                <div className="p-6 bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-2xl">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <CreditCard className="w-6 h-6 text-amber-400" />
+                                        <h4 className="text-lg font-bold text-white">Razorpay Secure Checkout</h4>
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-300 uppercase tracking-widest block mb-2">Payment Screenshot</label>
-                                        <div className="relative group">
-                                            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="file-upload" />
-                                            <label
-                                                htmlFor="file-upload"
-                                                className={`w - full flex flex - col items - center justify - center gap - 3 px - 4 py - 8 border - 2 border - dashed rounded - xl cursor - pointer transition - all duration - 300
-                                                    ${screenshotBase64
-                                                        ? 'border-emerald-500/50 bg-emerald-500/5 hover:bg-emerald-500/10'
-                                                        : 'border-white/20 hover:border-amber-500/50 hover:bg-white/5'
-                                                    } `}
-                                            >
-                                                {screenshotBase64 ? (
-                                                    <>
-                                                        <CheckCircle className="w-8 h-8 text-emerald-400" />
-                                                        <span className="text-sm font-medium text-emerald-400">Screenshot Uploaded ✓</span>
-                                                        <span className="text-xs text-slate-500">Click to change</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Upload className="w-8 h-8 text-slate-400 group-hover:text-amber-400 transition-colors duration-300" />
-                                                        <span className="text-sm text-slate-400 group-hover:text-white transition-colors duration-300">Upload Payment Proof</span>
-                                                        <span className="text-xs text-slate-600">PNG, JPG (Max 5MB)</span>
-                                                    </>
-                                                )}
-                                            </label>
+                                    <p className="text-sm text-slate-300 mb-4">
+                                        Click the button below to complete your payment securely via Razorpay. Your tokens will be credited instantly after successful payment.
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-emerald-400">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span>Secure payment gateway</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span>Instant token delivery (2 sec)</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span>UPI, Cards, NetBanking</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span>0% fees on UPI</span>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={loading || !utr || !screenshotBase64}
-                                        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-slate-700 disabled:to-slate-800 text-white font-bold h-14 rounded-xl flex items-center justify-center gap-2 mt-6 transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                Verifying...
-                                            </>
-                                        ) : (
-                                            "Confirm Payment"
-                                        )}
-                                    </button>
                                 </div>
+
+                                {error && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                                        <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                                        <p className="text-sm text-red-200">{error}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleRazorpayPayment}
+                                    disabled={razorpayProcessing}
+                                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-slate-700 disabled:to-slate-800 text-white font-bold h-16 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {razorpayProcessing ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Processing Payment...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="w-5 h-5" />
+                                            Pay ₹{selectedPack.price} with Razorpay
+                                        </>
+                                    )}
+                                </button>
+
+                                <p className="text-center text-xs text-slate-500">
+                                    Powered by Razorpay • Secure & PCI DSS Compliant
+                                </p>
                             </div>
                         </div>
                     )}
