@@ -11,7 +11,7 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWatchDemo, loading }) => {
     return (
-        <section className="flex-1 flex flex-col items-center justify-center w-full animate-fade-in-up px-4 relative z-10 min-h-[60vh] py-8 md:py-12 overflow-x-hidden">
+        <section className="flex-1 flex flex-col items-center justify-center w-full max-w-[100vw] overflow-hidden animate-fade-in-up px-4 sm:px-6 relative z-10 min-h-[60vh] py-8 md:py-12">
 
             {/* Hero Content */}
             <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-10 mb-8 md:mb-16 w-full px-2">
@@ -56,7 +56,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
 
                 {/* Headline */}
                 <div className="space-y-4 md:space-y-6 relative px-1 md:px-2">
-                    <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-medium tracking-tight leading-[1.2] md:leading-[1.1] py-2 relative z-10 break-words w-full">
+                    <h1 className="text-2xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-medium tracking-tight leading-[1.2] md:leading-[1.1] py-2 relative z-10 break-words w-full">
                         <span className="block text-slate-400 opacity-80 text-xs md:text-xl font-sans font-light tracking-[0.15em] md:tracking-[0.3em] uppercase mb-2 md:mb-4 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                             Precision Engineered
                         </span>
