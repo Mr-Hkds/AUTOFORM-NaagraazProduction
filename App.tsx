@@ -130,21 +130,21 @@ const LaptopRequirementModal = ({ onClose }: { onClose: () => void }) => (
 
 const Header = ({ reset, step, user, loading, onLogout, onShowPricing, onSignInClick, onDashboardClick }: { reset: () => void, step: number, user: User | null, loading: boolean, onLogout: () => void, onShowPricing: () => void, onSignInClick: () => void, onDashboardClick: () => void }) => (
   <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#020617]/80 backdrop-blur-xl">
-    <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
       <div
-        className="flex items-center gap-3 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+        className="flex items-center gap-2 sm:gap-3 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
         onClick={reset}
       >
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <Zap className="w-4 h-4 text-white" fill="currentColor" />
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="currentColor" />
         </div>
         <div className="flex flex-col justify-center gap-0.5">
-          <span className="font-serif font-semibold text-base text-white tracking-tight leading-none">AutoForm</span>
-          <span className="text-[8px] text-slate-400 font-sans tracking-[0.25em] uppercase opacity-70">A NaagRaaz Production</span>
+          <span className="font-serif font-semibold text-sm sm:text-base text-white tracking-tight leading-none">AutoForm</span>
+          <span className="text-[7px] sm:text-[8px] text-slate-400 font-sans tracking-[0.25em] uppercase opacity-70 hidden sm:block">A NaagRaaz Production</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3 sm:gap-6">
         {/* User Profile / Login Button */}
         <div className="flex items-center gap-3 pl-6 border-l border-white/5">
           {loading ? (
@@ -155,12 +155,23 @@ const Header = ({ reset, step, user, loading, onLogout, onShowPricing, onSignInC
           ) : user ? (
             <>
               {user.isAdmin && (
-                <button onClick={onDashboardClick} className="mr-3 px-3 py-1.5 rounded-lg bg-slate-800 text-[10px] text-white font-medium hover:bg-slate-700 transition">
+                <button onClick={onDashboardClick} className="hidden sm:block mr-3 px-3 py-1.5 rounded-lg bg-slate-800 text-[10px] text-white font-medium hover:bg-slate-700 transition">
                   Admin Dashboard
                 </button>
               )}
               <div className="flex flex-col items-end">
-                <span className="text-xs font-medium text-white">{user.displayName || user.email}</span>
+                {/* Mobile: Shortened Name */}
+                <span className="sm:hidden text-xs font-medium text-white truncate max-w-[80px]" title={user.displayName || user.email}>
+                  {(() => {
+                    const name = user.displayName || user.email || '';
+                    // Show first name only, or first 10 chars
+                    const firstName = name.split(' ')[0];
+                    return firstName.length > 10 ? firstName.substring(0, 10) + '...' : firstName;
+                  })()}
+                </span>
+                {/* Desktop: Full Name */}
+                <span className="hidden sm:block text-xs font-medium text-white">{user.displayName || user.email}</span>
+
                 <button onClick={onShowPricing} className="text-[10px] font-mono uppercase tracking-wide flex items-center gap-1 transition-colors hover:scale-105 active:scale-95">
                   <span className={`${(user.tokens || 0) < 10 ? 'text-red-400 animate-pulse font-bold' : 'text-amber-400'}`}>
                     {user.tokens || 0} TOKENS
