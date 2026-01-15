@@ -2,6 +2,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Last Build Trigger: v4.0.2 Force Update
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
