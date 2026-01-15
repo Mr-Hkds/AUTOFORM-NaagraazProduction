@@ -82,6 +82,11 @@ export const checkPendingRequest = async (userId: string): Promise<boolean> => {
 
 export const approvePayment = async (requestId: string, userId: string) => {
     try {
+        // Store user data for email (outside transaction)
+        let userEmail: string | null = null;
+        let userName: string | null = null;
+        let tokensAdded = 0;
+
         await runTransaction(db, async (transaction) => {
             const requestRef = doc(db, REQUESTS_COLLECTION, requestId);
             const userRef = doc(db, USERS_COLLECTION, userId);
@@ -92,11 +97,17 @@ export const approvePayment = async (requestId: string, userId: string) => {
                 throw new Error("Request does not exist!");
             }
             const requestData = requestSnap.data() as PaymentRequest;
-            const tokensToAdd = requestData.tokens || 0;
+            tokensAdded = requestData.tokens || 0;
 
             // Fetch user data for email
             const userSnap = await transaction.get(userRef);
             const userData = userSnap.data();
+
+            // Store email data for later (outside transaction)
+            if (userData?.email) {
+                userEmail = userData.email;
+                userName = userData.displayName || 'Valued User';
+            }
 
             // WRITE SECOND: Update Request Status & Delete Screenshot
             transaction.update(requestRef, {
@@ -108,19 +119,22 @@ export const approvePayment = async (requestId: string, userId: string) => {
             // WRITE THIRD: Add tokens to user
             transaction.update(userRef, {
                 isPremium: true, // Keep legacy flag
-                tokens: increment(tokensToAdd)
+                tokens: increment(tokensAdded)
             });
-
-            // Send success email to user (outside transaction)
-            if (userData?.email) {
-                const { sendUserSuccessEmail } = await import('./emailService');
-                await sendUserSuccessEmail(
-                    userData.email,
-                    userData.displayName || 'Valued User',
-                    tokensToAdd
-                );
-            }
         });
+
+        // Send success email to user AFTER transaction completes successfully
+        if (userEmail) {
+            try {
+                const { sendUserSuccessEmail } = await import('./emailService');
+                await sendUserSuccessEmail(userEmail, userName || 'Valued User', tokensAdded);
+                console.log('✅ Payment approved and success email sent to user');
+            } catch (emailError) {
+                console.error("Success email failed (non-critical):", emailError);
+                // Don't throw - payment was still approved successfully
+            }
+        }
+
         return true;
     } catch (error) {
         console.error("Error approving payment:", error);
