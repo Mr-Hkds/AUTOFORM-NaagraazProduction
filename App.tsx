@@ -155,9 +155,23 @@ const Header = ({ reset, step, user, loading, onLogout, onShowPricing, onSignInC
           ) : user ? (
             <>
               {user.isAdmin && (
-                <button onClick={onDashboardClick} className="hidden sm:block mr-3 px-3 py-1.5 rounded-lg bg-slate-800 text-[10px] text-white font-medium hover:bg-slate-700 transition">
-                  Admin Dashboard
-                </button>
+                <>
+                  {/* Mobile: Icon Button */}
+                  <button
+                    onClick={onDashboardClick}
+                    className="sm:hidden p-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                    title="Admin Dashboard"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                  {/* Desktop: Full Button */}
+                  <button
+                    onClick={onDashboardClick}
+                    className="hidden sm:block mr-3 px-3 py-1.5 rounded-lg bg-slate-800 text-[10px] text-white font-medium hover:bg-slate-700 transition"
+                  >
+                    Admin Dashboard
+                  </button>
+                </>
               )}
               <div className="flex flex-col items-end">
                 {/* Mobile: Shortened Name */}
