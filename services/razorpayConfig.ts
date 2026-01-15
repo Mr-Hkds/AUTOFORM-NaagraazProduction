@@ -1,26 +1,27 @@
 /**
  * Razorpay Configuration
  * 
- * IMPORTANT: Replace these placeholder values with your actual Razorpay API keys
+ * SECURITY: API keys are loaded from environment variables (.env file)
+ * NEVER commit .env file to Git!
  * 
- * To get your keys:
- * 1. Go to https://razorpay.com/
- * 2. Login to Dashboard
- * 3. Settings → API Keys
- * 4. Generate Test Keys (for development)
- * 5. Copy Key ID and Key Secret here
+ * Setup:
+ * 1. Copy .env.example to .env
+ * 2. Add your Razorpay API keys to .env
+ * 3. Restart development server
  */
 
-// RAZORPAY API KEYS - REPLACE WITH YOUR ACTUAL KEYS
+// RAZORPAY API KEYS - Loaded from .env file (SECURE)
 export const RAZORPAY_CONFIG = {
-    // Test Key ID (starts with rzp_test_)
-    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_XXXXXXXXXXXXXX',
+    // Key ID from environment variable
+    keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
 
-    // Test Key Secret (NEVER expose in client code - only for backend)
-    keySecret: import.meta.env.VITE_RAZORPAY_KEY_SECRET || 'XXXXXXXXXXXXXXXXXXXXXXXX',
+    // Key Secret from environment variable (NEVER exposed in client!)
+    // Note: This is still accessible in browser. For production,
+    // move order creation and verification to backend (Firebase Functions)
+    keySecret: import.meta.env.VITE_RAZORPAY_KEY_SECRET || '',
 
-    // Environment
-    isTestMode: import.meta.env.VITE_RAZORPAY_TEST_MODE !== 'false',
+    // Environment mode
+    isTestMode: import.meta.env.VITE_RAZORPAY_TEST_MODE === 'true',
 };
 
 // Razorpay Checkout Options

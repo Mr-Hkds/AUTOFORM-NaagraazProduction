@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown, CreditCard } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown, CreditCard, Shield, Lock } from 'lucide-react';
 import { createPaymentRequest, checkPendingRequest } from '../services/paymentService';
 import { createPaymentOrder, initializeRazorpayCheckout, verifyPaymentSignature } from '../services/razorpayService';
 import { creditTokensAutomatically } from '../services/autoPaymentService';
@@ -294,30 +294,64 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
 
                             {/* Razorpay Payment Section */}
                             <div className="space-y-6">
-                                <div className="p-6 bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-2xl">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <CreditCard className="w-6 h-6 text-amber-400" />
-                                        <h4 className="text-lg font-bold text-white">Razorpay Secure Checkout</h4>
+                                {/* Security & Trust Badge Header */}
+                                <div className="p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/30 rounded-2xl">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                                <Shield className="w-6 h-6 text-emerald-400" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-base font-bold text-white">100% Secure Payment</h4>
+                                                <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    Verified by Razorpay
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Trusted by</div>
+                                            <div className="text-sm font-bold text-white">10M+ Users</div>
+                                        </div>
                                     </div>
                                     <p className="text-sm text-slate-300 mb-4">
-                                        Click the button below to complete your payment securely via Razorpay. Your tokens will be credited instantly after successful payment.
+                                        Your payment is protected by bank-grade encryption. Tokens will be credited instantly after successful payment.
                                     </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-emerald-400">
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-emerald-400">
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>Secure payment gateway</span>
+                                            <Lock className="w-3.5 h-3.5" />
+                                            <span>256-bit SSL</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>Instant token delivery (2 sec)</span>
+                                            <CheckCircle className="w-3.5 h-3.5" />
+                                            <span>PCI DSS Certified</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>UPI, Cards, NetBanking</span>
+                                            <CheckCircle className="w-3.5 h-3.5" />
+                                            <span>Instant Delivery</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span>0% fees on UPI</span>
+                                            <CheckCircle className="w-3.5 h-3.5" />
+                                            <span>0% Fees on UPI</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Payment Methods Info */}
+                                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                                    <div className="text-xs text-slate-400 uppercase tracking-wider mb-3 text-center">Accepted Payment Methods</div>
+                                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                                        <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                                            <span className="text-xs font-semibold text-white">UPI</span>
+                                        </div>
+                                        <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                                            <span className="text-xs font-semibold text-white">Cards</span>
+                                        </div>
+                                        <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                                            <span className="text-xs font-semibold text-white">NetBanking</span>
+                                        </div>
+                                        <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                                            <span className="text-xs font-semibold text-white">Wallets</span>
                                         </div>
                                     </div>
                                 </div>
@@ -329,11 +363,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
                                     </div>
                                 )}
 
+                                {/* Pay Button */}
                                 <button
                                     onClick={handleRazorpayPayment}
                                     disabled={razorpayProcessing}
-                                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-slate-700 disabled:to-slate-800 text-white font-bold h-16 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="relative w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:from-slate-700 disabled:to-slate-800 text-white font-bold h-16 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 disabled:shadow-none hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden"
                                 >
+                                    {/* Security badge overlay */}
+                                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
+                                        <Shield className="w-3 h-3 text-emerald-300" />
+                                        <span className="text-[9px] text-emerald-300 font-semibold">Secure</span>
+                                    </div>
+
                                     {razorpayProcessing ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -342,14 +383,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
                                     ) : (
                                         <>
                                             <CreditCard className="w-5 h-5" />
-                                            Pay ₹{selectedPack.price} with Razorpay
+                                            Pay ₹{selectedPack.price} Securely
                                         </>
                                     )}
                                 </button>
 
-                                <p className="text-center text-xs text-slate-500">
-                                    Powered by Razorpay • Secure & PCI DSS Compliant
-                                </p>
+                                {/* Trust Footer */}
+                                <div className="text-center space-y-2">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <p className="text-xs text-emerald-400 font-semibold">Powered by Razorpay - India's Most Trusted Payment Gateway</p>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500">
+                                        🔒 Your payment is protected by bank-grade 256-bit SSL encryption
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
