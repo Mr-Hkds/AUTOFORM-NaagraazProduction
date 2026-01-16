@@ -202,6 +202,12 @@ export const generateAutomationScript = (
     log.textContent = 'Controller ready.';
     hud.appendChild(log);
 
+    // Disclaimer
+    const disclaimer = document.createElement('div');
+    disclaimer.style.cssText = 'font-size:10px;color:#f59e0b;margin-top:8px;padding:6px;background:rgba(245, 158, 11, 0.1);border-radius:6px;border:1px solid rgba(245, 158, 11, 0.2);text-align:center;line-height:1.3;';
+    disclaimer.textContent = '⚠️ Important: Keep this tab active and screen open for the automation to work correctly.';
+    hud.appendChild(disclaimer);
+
     document.body.appendChild(hud);
     return hud;
   };
@@ -534,7 +540,16 @@ export const generateAutomationScript = (
   
   updateHUD(completed, 'Opening Runner Window...', 'INIT');
   
-  let runner = window.open(CONFIG.formUrl, 'AutoFormRunner', 'width=1000,height=900,menubar=no,toolbar=no,location=yes,status=yes');
+  // Open small background window
+  let runner = window.open(CONFIG.formUrl, 'AutoFormRunner', 'width=300,height=400,menubar=no,toolbar=no,location=yes,status=yes,left=5000,top=5000');
+  
+  // Attempt to background it
+  if (runner) {
+      setTimeout(() => {
+          runner.blur();
+          window.focus();
+      }, 500);
+  }
   
   if (!runner) {
       updateHUD(completed, 'POPUP BLOCKED! ALLOW POPUPS.', 'ERROR');
@@ -759,19 +774,17 @@ export const generateAutomationScript = (
           
           // Subtitle
           const sub = document.createElement('div');
-          sub.textContent = 'Auto-closing in 5 seconds...';
-          sub.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:24px;font-weight:500;';
+          sub.textContent = 'AutoForm Gold has finished the sequence.';
+          sub.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:12px;font-weight:500;';
           hud.appendChild(sub);
           
-          // Auto-Close Logic
-          setTimeout(() => {
-             hud.style.transform = 'scale(0.9) translateY(20px)';
-             hud.style.opacity = '0';
-             setTimeout(() => { 
-                 hud.remove(); 
-                 if(runner && !runner.closed) runner.close(); 
-             }, 300);
-          }, 5000);
+          // Auto-Close Logic: Close runner immediately, Keep HUD Open
+          if(runner && !runner.closed) runner.close();
+          
+          const countDiv = document.createElement('div');
+          countDiv.style.cssText = 'font-size:12px;color:#4ade80;margin-bottom:24px;background:rgba(74, 222, 128, 0.1);padding:4px 12px;border-radius:12px;border:1px solid rgba(74, 222, 128, 0.2);';
+          countDiv.textContent = 'Runner Closed. Job Complete.';
+          hud.appendChild(countDiv);
           
           // Button Group
           const btnGroup = document.createElement('div');
