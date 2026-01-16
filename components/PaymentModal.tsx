@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown, CreditCard, Shield, Lock, ShieldCheck } from 'lucide-react';
 import { createPaymentOrder, initializeRazorpayCheckout, verifyAndCapturePayment } from '../services/razorpayService';
-import { creditTokensAutomatically } from '../services/autoPaymentService';
+
 import { User } from '../types';
 
 interface PaymentModalProps {
