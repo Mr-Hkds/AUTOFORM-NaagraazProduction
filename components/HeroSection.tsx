@@ -195,8 +195,23 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
                         </div>
                     </div>
                 </div>
+
+                {/* Laptop/Desktop Requirement Disclaimer */}
+                <div className="mt-4 animate-fade-in-up flex justify-center" style={{ animationDelay: '700ms' }}>
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/40 border border-slate-700/50 backdrop-blur-sm">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono tracking-wider uppercase">
+                            <span className="text-slate-300 font-bold">Laptop/Desktop</span> Required for Access
+                        </span>
+                    </div>
+                </div>
             </div>
-        </section>
+        </div>
+            </div >
+        </section >
     );
 };
 
