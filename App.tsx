@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 // Log Version for Vercel Verification
 console.log('🚀 AutoForm AI v0.1.0 Loaded [Razorpay Fixes Included]');
-import { Bot, Copy, CheckCircle, AlertCircle, BarChart3, ArrowRight, ArrowLeft, RotateCcw, Sparkles, Code2, Terminal, Zap, Command, Activity, Cpu, Crown, LogOut, Settings, Lock, Laptop, Monitor, Target } from 'lucide-react';
+import { Bot, Copy, CheckCircle, AlertCircle, BarChart3, ArrowRight, ArrowLeft, RotateCcw, Sparkles, Code2, Terminal, Zap, Command, Activity, Cpu, Crown, LogOut, Settings, Lock, Laptop, Monitor, Target, ShieldCheck } from 'lucide-react';
 import { fetchAndParseForm } from './services/formParser';
 import { analyzeForm as analyzeFormWithStatistics, generateResponseSuggestions } from './services/analysisService';
 import { generateAutomationScript } from './utils/scriptTemplate';
@@ -497,24 +497,7 @@ function App() {
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
-
-    // Limit selection to available tokens
-    const availableTokens = user?.tokens || 0;
-
-    if (val > availableTokens) {
-      // If they try to select more than they have, cap it
-      if (availableTokens === 0) {
-        setTargetCount(10); // Default visual, but will trigger paywall on click if 0
-        setShowPricing(true);
-      } else {
-        setTargetCount(availableTokens);
-      }
-      if (val > availableTokens && availableTokens > 0) {
-        // Maybe show a tooltip or toast? For now just cap it.
-      }
-    } else {
-      setTargetCount(val);
-    }
+    setTargetCount(val);
   };
 
   const handleAnalyze = async () => {
@@ -904,17 +887,149 @@ function App() {
                         <div className="space-y-4 relative">
                           <div className="flex justify-between text-xs font-medium text-slate-400">
                             <span>Response Volume</span>
-                            <span className="text-amber-400 font-mono flex items-center gap-1">
-                              {targetCount}
-                              {!user.isPremium && <Lock className="w-3 h-3 text-slate-500" />}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              {/* Inline Recommendation Hint */}
+                              {(() => {
+                                const qCount = analysis.questions.length;
+                                let min = 30, max = 50;
+                                if (qCount > 10) { min = 50; max = 80; }
+                                if (qCount > 25) { min = 80; max = 120; }
+                                return (
+                                  <span className="text-[10px] text-emerald-500/60 font-mono hidden sm:inline-block">
+                                    (Rec: {min}-{max})
+                                  </span>
+                                );
+                              })()}
+
+                              <span className="text-amber-400 font-mono flex items-center gap-1">
+                                <span className="text-lg font-bold">{targetCount}</span>
+                                <span className="text-[10px] text-amber-500/70 uppercase">Responses</span>
+                                {!user.isPremium && <Lock className="w-3 h-3 text-slate-500" />}
+                              </span>
+                            </div>
                           </div>
-                          <input
-                            type="range" min="1" max={!user.isPremium ? "20" : "200"} // Visual max
-                            value={targetCount}
-                            onChange={handleSliderChange}
-                            className="w-full"
-                          />
+                          {(() => {
+                            const qCount = analysis.questions.length;
+                            let min = 30, max = 50;
+                            if (qCount > 10) { min = 50; max = 80; }
+                            if (qCount > 25) { min = 80; max = 120; }
+
+                            return (
+                              <div className="mt-4 mb-6 p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 relative overflow-hidden group shadow-lg">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                                <div className="mb-3 flex items-center gap-2 relative z-10">
+                                  <div className="p-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Recommended Strategy</span>
+                                </div>
+
+                                <p className="text-[10px] text-slate-300 leading-relaxed max-w-[95%] relative z-10 font-medium">
+                                  To ensure your project data looks <strong className="text-emerald-300">organic and authentic</strong>, our algorithm suggests:
+                                </p>
+
+                                <div className="mt-3 flex items-baseline gap-2 relative z-10">
+                                  <span className="text-3xl font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">{min}-{max}</span>
+                                  <span className="text-[10px] text-emerald-500/80 font-mono uppercase tracking-wider">Total Responses</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          <div className="relative w-full group py-2">
+                            <style>
+                              {`
+                                input[type=range]::-webkit-slider-thumb {
+                                  -webkit-appearance: none;
+                                  height: 20px;
+                                  width: 20px;
+                                  border-radius: 50%;
+                                  background: #f59e0b;
+                                  cursor: pointer;
+                                  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+                                  margin-top: -8px;
+                                }
+                                input[type=range]::-webkit-slider-thumb:hover {
+                                  transform: scale(1.2);
+                                  box-shadow: 0 0 15px rgba(245, 158, 11, 0.8);
+                                }
+                                input[type=range]::-moz-range-thumb {
+                                  height: 20px;
+                                  width: 20px;
+                                  border: none;
+                                  border-radius: 50%;
+                                  background: #f59e0b;
+                                  cursor: pointer;
+                                  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+                                }
+                              `}
+                            </style>
+                            <input
+                              type="range" min="1" max={!user.isPremium ? "20" : "200"}
+                              value={targetCount}
+                              onChange={handleSliderChange}
+                              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-3 uppercase tracking-wider items-center">
+                              <span>1</span>
+                              <span className="text-amber-500/50 animate-pulse font-bold tracking-[0.2em] text-[8px]">DRAG TO ADJUST</span>
+                              <span>{!user.isPremium ? "20" : "200"}</span>
+                            </div>
+
+                            {/* Token Warning Overlay */}
+                            {user && targetCount > (user.tokens || 0) && (
+                              <div className="absolute -bottom-8 right-0 bg-red-900/90 text-red-200 text-[10px] px-2 py-1 rounded border border-red-500/30 animate-fade-in z-20 whitespace-nowrap">
+                                Not enough tokens (Max: {user.tokens}) <span className="underline cursor-pointer hover:text-white" onClick={() => setShowPricing(true)}>Get More</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick Controls: +/- Buttons and Presets */}
+                          <div className="flex items-center justify-between mt-4 gap-3">
+                            {/* Minus / Plus Buttons */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setTargetCount(Math.max(1, targetCount - 5))}
+                                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-lg transition-all active:scale-95 border border-slate-700"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min={1}
+                                max={!user.isPremium ? 20 : 200}
+                                value={targetCount}
+                                onChange={(e) => {
+                                  const val = Math.min(Math.max(1, Number(e.target.value) || 1), !user.isPremium ? 20 : 200);
+                                  setTargetCount(val);
+                                }}
+                                className="w-14 h-8 bg-slate-900 border border-slate-700 rounded-lg text-center text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500"
+                              />
+                              <button
+                                onClick={() => setTargetCount(Math.min(!user.isPremium ? 20 : 200, targetCount + 5))}
+                                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-lg transition-all active:scale-95 border border-slate-700"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* Quick Presets */}
+                            <div className="flex gap-1">
+                              {[10, 25, 50, 100].filter(v => user.isPremium || v <= 20).map((preset) => (
+                                <button
+                                  key={preset}
+                                  onClick={() => setTargetCount(preset)}
+                                  className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all active:scale-95 ${targetCount === preset
+                                      ? 'bg-amber-500 text-black'
+                                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                    }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           {(!user.isPremium && (user.responsesUsed >= 50 || targetCount === (50 - user.responsesUsed))) && (
                             <div className="text-[10px] text-amber-500/80 mt-1 flex items-center justify-end gap-1 cursor-pointer hover:text-amber-400" onClick={() => setShowPricing(true)}>
                               Free Trial Limit Reached. <span className="underline">Upgrade</span>
