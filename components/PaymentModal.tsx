@@ -40,6 +40,17 @@ const TOKEN_PACKS = [
         color: 'from-emerald-600 to-emerald-900',
         textColor: 'text-emerald-200',
         border: 'border-emerald-500/50'
+    },
+    // TEMPORARY TEST PACK
+    {
+        id: 'test',
+        name: 'Test Mode',
+        tokens: 10,
+        price: 1,
+        icon: Shield,
+        color: 'from-red-900 to-slate-900',
+        textColor: 'text-red-200',
+        border: 'border-red-500/50'
     }
 ];
 
