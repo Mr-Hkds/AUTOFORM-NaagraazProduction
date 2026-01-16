@@ -965,7 +965,7 @@ function App() {
                               `}
                             </style>
                             <input
-                              type="range" min="1" max={!user.isPremium ? "20" : "200"}
+                              type="range" min="1" max="200"
                               value={targetCount}
                               onChange={handleSliderChange}
                               className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
@@ -973,7 +973,7 @@ function App() {
                             <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-3 uppercase tracking-wider items-center">
                               <span>1</span>
                               <span className="text-amber-500/50 animate-pulse font-bold tracking-[0.2em] text-[8px]">DRAG TO ADJUST</span>
-                              <span>{!user.isPremium ? "20" : "200"}</span>
+                              <span>200</span>
                             </div>
 
                             {/* Token Warning Overlay */}
@@ -997,16 +997,16 @@ function App() {
                               <input
                                 type="number"
                                 min={1}
-                                max={!user.isPremium ? 20 : 200}
+                                max={200}
                                 value={targetCount}
                                 onChange={(e) => {
-                                  const val = Math.min(Math.max(1, Number(e.target.value) || 1), !user.isPremium ? 20 : 200);
+                                  const val = Math.min(Math.max(1, Number(e.target.value) || 1), 200);
                                   setTargetCount(val);
                                 }}
                                 className="w-14 h-8 bg-slate-900 border border-slate-700 rounded-lg text-center text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500"
                               />
                               <button
-                                onClick={() => setTargetCount(Math.min(!user.isPremium ? 20 : 200, targetCount + 5))}
+                                onClick={() => setTargetCount(Math.min(200, targetCount + 5))}
                                 className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-lg transition-all active:scale-95 border border-slate-700"
                               >
                                 +
@@ -1015,13 +1015,13 @@ function App() {
 
                             {/* Quick Presets */}
                             <div className="flex gap-1">
-                              {[10, 25, 50, 100].filter(v => user.isPremium || v <= 20).map((preset) => (
+                              {[10, 25, 50, 100, 200].map((preset) => (
                                 <button
                                   key={preset}
                                   onClick={() => setTargetCount(preset)}
                                   className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all active:scale-95 ${targetCount === preset
-                                      ? 'bg-amber-500 text-black'
-                                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                    ? 'bg-amber-500 text-black'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
                                     }`}
                                 >
                                   {preset}
