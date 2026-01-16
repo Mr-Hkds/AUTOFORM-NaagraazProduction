@@ -114,6 +114,7 @@ export default async function handler(req, res) {
                 if (amount >= 29 && amount < 40) tokensToCredit = 80;
                 else if (amount >= 99 && amount < 120) tokensToCredit = 400;
                 else if (amount >= 249) tokensToCredit = 1000;
+                else if (amount === 1) tokensToCredit = 10; // Handle Test Pack
                 else {
                     // Fallback or custom amount logic
                     console.warn(`Amount ₹${amount} does not match standard packs. calculating pro-rata? No, skipping.`);
