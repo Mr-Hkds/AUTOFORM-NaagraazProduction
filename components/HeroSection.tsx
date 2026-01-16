@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles, Zap, Gift, Play, ShieldCheck, Laptop } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, Gift, Play, ShieldCheck, Laptop, Clipboard } from 'lucide-react';
 
 interface HeroSectionProps {
     url: string;
@@ -97,10 +97,31 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
                                 type="text"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && url && !loading) {
+                                        onAnalyze();
+                                    }
+                                }}
                                 placeholder="Paste Google Form Link..."
                                 className="flex-1 bg-transparent border-none text-white text-sm md:text-base placeholder:text-slate-600 focus:outline-none focus:ring-0 px-3 font-sans relative z-10 w-full min-w-0"
                                 spellCheck={false}
                             />
+
+                            {/* Paste Button */}
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const text = await navigator.clipboard.readText();
+                                        setUrl(text);
+                                    } catch (err) {
+                                        console.error('Failed to read clipboard:', err);
+                                    }
+                                }}
+                                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-amber-400 transition-all duration-200 relative z-10 shrink-0 group/paste"
+                                title="Paste from clipboard"
+                            >
+                                <Clipboard className="w-3.5 h-3.5" />
+                            </button>
                         </div>
 
                         <button
