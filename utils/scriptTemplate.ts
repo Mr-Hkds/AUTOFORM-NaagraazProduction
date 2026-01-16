@@ -759,9 +759,19 @@ export const generateAutomationScript = (
           
           // Subtitle
           const sub = document.createElement('div');
-          sub.textContent = 'AutoForm Gold has finished the sequence.';
+          sub.textContent = 'Auto-closing in 5 seconds...';
           sub.style.cssText = 'color:#94a3b8;font-size:13px;margin-bottom:24px;font-weight:500;';
           hud.appendChild(sub);
+          
+          // Auto-Close Logic
+          setTimeout(() => {
+             hud.style.transform = 'scale(0.9) translateY(20px)';
+             hud.style.opacity = '0';
+             setTimeout(() => { 
+                 hud.remove(); 
+                 if(runner && !runner.closed) runner.close(); 
+             }, 300);
+          }, 5000);
           
           // Button Group
           const btnGroup = document.createElement('div');
