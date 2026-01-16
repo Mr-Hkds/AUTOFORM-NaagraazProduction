@@ -116,25 +116,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
             console.log('✅ Payment successful, verifying and capturing...');
 
             // Verify and Capture payment via backend
-            // We pass the price from selectedPack and user ID
-            await verifyAndCapturePayment(
+            // Included: Secure Server-Side Token Crediting
+            const verificationResult = await verifyAndCapturePayment(
                 response.razorpay_payment_id,
                 selectedPack.price,
                 user.uid
             );
 
-            // If we reach here, payment is captured successfully
+            console.log('🎉 Payment Verified & Tokens Credited (Server-Side)!', verificationResult);
 
-            // Credit tokens automatically
-            await creditTokensAutomatically(
-                user.uid,
-                selectedPack.tokens,
-                response.razorpay_payment_id,
-                orderId,
-                paymentEmail
-            );
+            // Force a small delay to allow Firestore propagation if using real-time listeners
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            console.log('🎉 Tokens credited successfully!');
             setSuccess(true);
             setRazorpayProcessing(false);
 

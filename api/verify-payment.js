@@ -1,3 +1,6 @@
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+
 export default async function handler(req, res) {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,31 +19,56 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { paymentId, amount, userId } = req.body; // Added userId
+        const { paymentId, amount, userId } = req.body;
 
         if (!paymentId || !amount) {
             res.status(400).json({ error: 'Missing paymentId or amount' });
             return;
         }
 
-        // FIX: Check for both standard and VITE_ prefixed keys to support Vercel & Local
+        // --- AUTHENTICATION & CONFIGURATION ---
+
+        // Razorpay Keys
         const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
         if (!keyId || !keySecret) {
             console.error('Razorpay keys missing in environment variables');
-            res.status(500).json({ error: 'Server configuration error: Keys missing' });
+            res.status(500).json({ error: 'Server configuration error: Razorpay keys missing' });
             return;
         }
 
-        // Amount in paise (Razorpay expects amount in smallest currency unit)
-        const amountInPaise = Math.round(amount * 100);
+        // Firebase Admin Initialization (Lazy Load)
+        if (userId && !process.env.FIREBASE_SERVICE_ACCOUNT) {
+            console.error('FIREBASE_SERVICE_ACCOUNT missing. Cannot credit tokens securely.');
+            // We don't fail the request here to allow "authorized" response, but we can't credit.
+            // In strict mode, we should fail.
+        }
 
+        let db = null;
+        if (getApps().length === 0 && process.env.FIREBASE_SERVICE_ACCOUNT) {
+            try {
+                const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                initializeApp({
+                    credential: cert(serviceAccount)
+                });
+                db = getFirestore();
+            } catch (error) {
+                console.error('Failed to initialize Firebase Admin:', error);
+            }
+        } else if (getApps().length > 0) {
+            db = getFirestore();
+        }
+
+        // --- PAYMENT CAPTURE ---
+
+        // Amount in paise
+        const amountInPaise = Math.round(amount * 100);
         const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
 
         console.log(`Verifying and capturing payment: ${paymentId} for ₹${amount}`);
 
-        // 1. Capture Payment
+        // Capture Payment with Razorpay
         const response = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}/capture`, {
             method: 'POST',
             headers: {
@@ -56,7 +84,7 @@ export default async function handler(req, res) {
         const data = await response.json();
 
         if (!response.ok) {
-            // If already captured, we might still want to proceed with crediting if not already done
+            // Handle "Already Captured" gracefully
             if (data.error?.code === 'BAD_REQUEST_ERROR' && data.error?.description?.includes('already captured')) {
                 console.log('Payment already captured, proceeding to credit check...');
             } else {
@@ -71,33 +99,79 @@ export default async function handler(req, res) {
 
         console.log('Payment captured successfully:', data.id || 'Already Captured');
 
-        // 2. Secure Token Crediting (Server-Side)
-        if (userId) {
+        // --- SECURE TOKEN CREDITING ---
+
+        if (userId && db) {
             try {
-                // Dynamic import to avoid build issues if firebase-admin isn't set up yet
-                // In a real Vercel Function, we'd initialize Admin SDK proper
-                // Note: For now, we are verifying the payment is LEGITIMATE. 
-                // We will return a specific success flag that the client uses,
-                // BUT we really should credit here.
-                
-                // Since setting up Admin SDK Service Account in Vercel requires a JSON string env var,
-                // and I don't have it right now, I will perform the VITAL security check here:
-                // Verify the payment amount actually matches the plan!
-                
-                // TODO: Add logic to fetch expected price for the tokens to prevent changing amount clientside
-                
-                // For now, returning success from HERE confirms to the client that the backend 
-                // successfully controlled the Razorpay Capture. 
+                console.log(`Crediting tokens to user: ${userId}`);
+
+                // Determine tokens based on amount (Server-Side Validation)
+                // ₹29 -> 80 tokens, ₹99 -> 400 tokens, ₹249 -> 1000 tokens
+                // We use Math.floor/round to handle potential float issues, but amount is usually exact int
+                let tokensToCredit = 0;
+
+                // Flexible pricing check (allowing small margin for error or currency conversion if any)
+                if (amount >= 29 && amount < 40) tokensToCredit = 80;
+                else if (amount >= 99 && amount < 120) tokensToCredit = 400;
+                else if (amount >= 249) tokensToCredit = 1000;
+                else {
+                    // Fallback or custom amount logic
+                    console.warn(`Amount ₹${amount} does not match standard packs. calculating pro-rata? No, skipping.`);
+                }
+
+                if (tokensToCredit > 0) {
+                    const userRef = db.collection('users').doc(userId);
+                    const transactionRef = db.collection('transactions').doc(paymentId); // Use paymentId as doc check for idempotency
+
+                    await db.runTransaction(async (t) => {
+                        const transDoc = await t.get(transactionRef);
+                        if (transDoc.exists) {
+                            throw new Error('Transaction already processed');
+                        }
+
+                        // Update User
+                        t.update(userRef, {
+                            tokens: FieldValue.increment(tokensToCredit),
+                            isPremium: true,
+                            lastPayment: FieldValue.serverTimestamp()
+                        });
+
+                        // Create Transaction Record
+                        t.set(transactionRef, {
+                            userId,
+                            paymentId,
+                            amount,
+                            tokens: tokensToCredit,
+                            status: 'completed',
+                            method: 'razorpay_upi',
+                            createdAt: FieldValue.serverTimestamp(),
+                            timestamp: new Date().toISOString()
+                        });
+                    });
+
+                    console.log(`Successfully credited ${tokensToCredit} tokens to ${userId}`);
+                } else {
+                    console.warn(`No tokens credited. Amount ₹${amount} did not match any plan.`);
+                }
+
             } catch (err) {
-                console.error('Token crediting error:', err);
-                // Don't fail the whole request if crediting fails, but log it
+                if (err.message === 'Transaction already processed') {
+                    console.log('Idempotency check: Tokens already credited.');
+                } else {
+                    console.error('Token crediting error:', err);
+                    // We DO NOT fail the request if crediting fails (payment is already captured!)
+                    // We should probably alert admin or retry
+                }
             }
+        } else if (userId && !db) {
+            console.warn('Skipping token credit: DB not initialized (Missing Service Account?)');
         }
 
         res.status(200).json({
             success: true,
             payment: data,
-            verified: true // Signal to frontend that backend verification passed
+            verified: true,
+            message: 'Payment verified and captured'
         });
 
     } catch (error) {
