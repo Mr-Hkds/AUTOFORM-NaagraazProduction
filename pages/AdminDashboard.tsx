@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy, limit, onSnapshot, doc, deleteDoc, updateDoc, Timestamp, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { PaymentTransaction, User } from '../types';
-import { CheckCircle, XCircle, Clock, ShieldCheck, ArrowLeft, Users, DollarSign, RefreshCw, Trash2, Edit2, Activity, CreditCard, TrendingUp } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldCheck, ArrowLeft, ArrowRight, Users, DollarSign, RefreshCw, Trash2, Edit2, Activity, CreditCard, TrendingUp } from 'lucide-react';
 
 const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) => {
     const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
@@ -272,43 +272,53 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
             </div>
 
             {/* Stats Check - KPIs */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
-                <div
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
+
+                {/* REVENUE CARD - The most important metric */}
+                <div className="glass-panel p-6 sm:p-8 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <DollarSign className="w-24 h-24 text-amber-500" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2 text-amber-400">
+                            <div className="p-2 bg-amber-500/10 rounded-lg">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                            <span className="text-sm font-bold uppercase tracking-widest">Total Revenue</span>
+                        </div>
+                        <div className="text-4xl sm:text-5xl font-bold text-white mb-2 tracking-tight">
+                            ₹{totalRevenue.toLocaleString()}
+                        </div>
+                        <p className="text-slate-400 text-sm">
+                            Lifetime earnings from token sales
+                        </p>
+                    </div>
+                </div>
+
+                {/* USERS CARD - Click to Manage */}
+                <button
                     onClick={fetchAllUsers}
-                    className="glass-panel p-4 sm:p-6 rounded-xl border border-white/5 hover:border-blue-500/40 cursor-pointer transition-all hover:scale-[1.02] group"
+                    className="glass-panel p-6 sm:p-8 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent relative overflow-hidden group text-left transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-900/20"
                 >
-                    <div className="flex items-center justify-between mb-2">
-                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Users className="w-24 h-24 text-blue-500" />
                     </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{loadingUsers ? <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" /> : totalUsers.toLocaleString()}</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Total Users</div>
-                </div>
-
-                <div className="glass-panel p-4 sm:p-6 rounded-xl border border-white/5 hover:border-emerald-500/20 transition-colors group">
-                    <div className="flex items-center justify-between mb-2">
-                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2 text-blue-400">
+                            <div className="p-2 bg-blue-500/10 rounded-lg">
+                                <Users className="w-6 h-6" />
+                            </div>
+                            <span className="text-sm font-bold uppercase tracking-widest">User Database</span>
+                        </div>
+                        <div className="text-4xl sm:text-5xl font-bold text-white mb-2 tracking-tight">
+                            {loadingUsers ? <RefreshCw className="w-8 h-8 animate-spin" /> : totalUsers.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-400 text-sm group-hover:text-blue-300 transition-colors">
+                            <span>Manage Users & Tokens</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </div>
                     </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-emerald-400 mb-1">
-                        {((allUsers.filter(u => u.isPremium).length / (totalUsers || 1)) * 100).toFixed(1)}%
-                    </div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest">Conversion Rate</div>
-                </div>
-
-                <div className="glass-panel p-4 sm:p-6 rounded-xl border border-white/5 hover:border-amber-500/20 transition-colors group">
-                    <div className="flex items-center justify-between mb-2">
-                        <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-amber-400 mb-1">{transactions.length}</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest">Transactions</div>
-                </div>
-
-                <div className="glass-panel p-4 sm:p-6 rounded-xl border border-white/5 hover:border-purple-500/20 transition-colors group">
-                    <div className="flex items-center justify-between mb-2">
-                        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold text-purple-400 mb-1">Live</div>
-                    <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-widest">Auto Payments</div>
-                </div>
+                </button>
             </div>
 
             {/* Transactions List */}
