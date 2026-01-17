@@ -59,25 +59,25 @@ const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, o
                             {/* Token Button with Trust Indicator */}
                             <button
                                 onClick={onShowPricing}
-                                className="hidden md:flex flex-col items-end group/token transition-all hover:scale-105 active:scale-95"
+                                className="flex flex-col items-end group/token transition-all hover:scale-105 active:scale-95"
                             >
-                                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                                    <Crown className="w-3.5 h-3.5 text-amber-500 group-hover/token:rotate-12 transition-transform" />
-                                    <span className="text-xs font-mono font-bold text-amber-200">
+                                <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                                    <Crown className="w-3 h-3 md:w-3.5 md:h-3.5 text-amber-500 group-hover/token:rotate-12 transition-transform" />
+                                    <span className="text-[10px] md:text-xs font-mono font-bold text-amber-200">
                                         Add Tokens <span className="text-amber-500 mx-1">|</span> {user.tokens ?? 0}
                                     </span>
                                 </div>
-                                <span className="text-[8px] text-slate-500 font-mono uppercase tracking-wider mt-0.5 mr-2 opacity-60 group-hover/token:opacity-100 transition-opacity">
+                                <span className="text-[7px] md:text-[8px] text-slate-500 font-mono uppercase tracking-wider mt-0.5 mr-2 opacity-60 group-hover/token:opacity-100 transition-opacity whitespace-nowrap">
                                     Secured by Razorpay
                                 </span>
                             </button>
 
                             {/* User Profile */}
-                            <div className="flex items-center gap-3 pl-3 md:pl-6 border-l border-white/5">
+                            <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-6 border-l border-white/5">
                                 {user.isAdmin && (
                                     <button
                                         onClick={onDashboardClick}
-                                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all hidden sm:block"
                                         title="Admin Dashboard"
                                     >
                                         <Settings className="w-4 h-4" />
@@ -91,16 +91,12 @@ const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, o
                                     </div>
 
                                     <div className="relative group/avatar">
-                                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center overflow-hidden">
+                                        <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-slate-800 to-black border border-white/10 flex items-center justify-center overflow-hidden">
                                             {user.photoURL ? (
                                                 <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
                                             ) : (
                                                 <UserIcon className="w-4 h-4 text-slate-400" />
                                             )}
-                                        </div>
-                                        {/* Mobile Token Count Overlay */}
-                                        <div className="absolute -bottom-1 -right-1 md:hidden w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[8px] font-bold text-[#020617] border border-[#020617]">
-                                            {Math.min(user.tokens || 0, 99)}
                                         </div>
                                     </div>
 

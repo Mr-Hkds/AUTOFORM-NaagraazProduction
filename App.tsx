@@ -220,25 +220,20 @@ const Footer = () => (
 
       {/* Signature Section - The "Showpiece" */}
       <div className="mt-12 pt-8 border-t border-white/5 w-full flex flex-col items-center">
-        {/* Naagraaz Stamp (Centered & Upright) */}
-        <div className="mb-4 pointer-events-none select-none opacity-90 mix-blend-screen">
-          <img
-            src="/naagraaz-stamp.png"
-            alt="Naagraaz Seal"
-            className="w-20 h-20 md:w-24 md:h-24 object-contain"
-            style={{ filter: 'brightness(0) invert(1)' }}
-          />
-        </div>
         <p className="text-[9px] text-slate-600 tracking-[0.2em] font-medium uppercase font-sans mb-3">
           Designed & Engineered by
         </p>
         <div className="group relative cursor-pointer">
-          <div className="absolute -inset-8 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          <span className="relative z-10 text-xl md:text-2xl font-bold text-white font-mono tracking-widest glitch group-hover:text-emerald-400 transition-colors duration-300" data-text="MR. HARKAMAL">
+          {/* Liquid Gold Glow */}
+          <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+          {/* Signature Text */}
+          <span className="relative z-10 text-lg md:text-xl font-bold font-serif tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-700 via-yellow-200 to-amber-700 bg-[length:200%_auto] animate-text-shimmer drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] filter brightness-110 contrast-125">
             MR. HARKAMAL
           </span>
         </div>
       </div>
+
 
 
 
