@@ -62,10 +62,12 @@ const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, o
                                 onClick={onShowPricing}
                                 className="flex flex-col items-end md:items-end group/token transition-transform hover:scale-105 active:scale-95"
                             >
-                                <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/50 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                                    <Crown className="w-3 h-3 md:w-3.5 md:h-3.5 text-amber-500 group-hover/token:rotate-12 transition-transform" />
-                                    <span className="text-[10px] md:text-xs font-mono font-bold text-amber-200">
-                                        Add Tokens <span className="text-amber-500 mx-1">|</span> {user.tokens ?? 0}
+                                <div className="flex items-center gap-1.5 md:gap-2 px-2.5 py-1 md:px-4 md:py-1.5 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                                    <Crown className="w-3.5 h-3.5 text-amber-500 group-hover/token:rotate-12 transition-transform" />
+                                    <span className="text-[11px] md:text-xs font-mono font-bold text-amber-200 flex items-center">
+                                        <span className="hidden sm:inline">Add Tokens</span>
+                                        <span className="hidden sm:inline text-amber-500 mx-1.5">|</span>
+                                        {user.tokens ?? 0}
                                     </span>
                                 </div>
                             </button>

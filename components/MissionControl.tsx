@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, Terminal, Shield, Zap, CheckCircle, Clock, Disc, Cpu, AlertCircle, Settings } from 'lucide-react';
+import { Activity, Terminal, Shield, Zap, CheckCircle, Clock, Disc, Cpu, AlertCircle, Settings, Crown } from 'lucide-react';
 
 interface MissionLog {
     msg: string;
@@ -15,9 +15,10 @@ interface MissionControlProps {
     onBackToConfig: () => void;
     onNewMission: () => void;
     formTitle: string;
+    onShowPricing?: () => void;
 }
 
-const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAbort, onBackToConfig, onNewMission, formTitle }) => {
+const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAbort, onBackToConfig, onNewMission, formTitle, onShowPricing }) => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const logContainerRef = useRef<HTMLDivElement>(null);
@@ -27,16 +28,17 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
     const currentStatus = logs.length > 0 ? logs[logs.length - 1].status : 'INITIALIZING';
     const progress = (currentCount / targetCount) * 100;
 
-    // Timer
+    // Timer tracking
     useEffect(() => {
+        // Stop timer if "DONE", "ABORTED", OR if settling (implied by progress = 100 but status might be 'RUNNING' initially)
         if (currentStatus === 'DONE' || currentStatus === 'ERROR' || currentStatus === 'ABORTED') return;
 
-        const start = Date.now() - (elapsedTime * 1000); // Resume from previous if needed
+        const start = Date.now() - (elapsedTime * 1000);
         const interval = setInterval(() => {
             setElapsedTime(Math.floor((Date.now() - start) / 1000));
         }, 1000);
         return () => clearInterval(interval);
-    }, [currentStatus]);
+    }, [currentStatus]); // Removed logic dependency on elapsedTime to prevent re-renders
 
     // Auto-scroll logs without jumping the whole page (direct container manipulation)
     useEffect(() => {
@@ -69,8 +71,8 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
             {currentStatus === 'DONE' && (
                 <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl animate-fade-in border border-emerald-500/20 rounded-2xl shadow-[0_0_100px_rgba(16,185,129,0.1)]">
                     <div className="mb-8 relative">
-                        <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full animate-pulse" />
-                        <div className="relative bg-emerald-500/20 p-6 rounded-full border border-emerald-500/30 animate-bounce">
+                        <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
+                        <div className="relative bg-emerald-500/20 p-6 rounded-full border border-emerald-500/30">
                             <CheckCircle className="w-16 h-16 text-emerald-500" />
                         </div>
                     </div>
@@ -83,13 +85,22 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
                             The automation process has successfully submitted all {targetCount} form entries. The operation is now finished and all records have been anchored.
                         </p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={onNewMission}
                             className="group relative px-8 py-4 bg-emerald-600 text-white font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95"
                         >
                             Initialize New Sequence
                         </button>
+                        {onShowPricing && (
+                            <button
+                                onClick={onShowPricing}
+                                className="px-8 py-4 bg-amber-500/10 border border-amber-500/30 text-amber-500 font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-amber-500/20 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Crown className="w-4 h-4" />
+                                Refill Tokens
+                            </button>
+                        )}
                         <button
                             onClick={onBackToConfig}
                             className="px-8 py-4 bg-white/5 border border-white/10 text-slate-300 font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all active:scale-95"
@@ -104,7 +115,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
             {currentStatus === 'ABORTED' && (
                 <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#000000]/95 backdrop-blur-3xl animate-fade-in border border-red-500/20 rounded-2xl shadow-[0_0_100px_rgba(239,68,68,0.1)]">
                     <div className="mb-8 relative">
-                        <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full animate-pulse" />
+                        <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full" />
                         <div className="relative bg-red-500/20 p-6 rounded-full border border-red-500/30">
                             <AlertCircle className="w-16 h-16 text-red-500" />
                         </div>
@@ -118,13 +129,22 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
                             The operation was manually terminated. Only {currentCount} of {targetCount} payloads were deployed. No further data will be transmitted.
                         </p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={onBackToConfig}
                             className="group relative px-8 py-4 bg-amber-600 text-white font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-amber-500 transition-all shadow-lg active:scale-95"
                         >
                             Adjust Configuration
                         </button>
+                        {onShowPricing && (
+                            <button
+                                onClick={onShowPricing}
+                                className="px-8 py-4 bg-amber-500/10 border border-amber-500/30 text-amber-500 font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-amber-500/20 transition-all active:scale-95 flex items-center gap-2"
+                            >
+                                <Crown className="w-4 h-4" />
+                                Refill Tokens
+                            </button>
+                        )}
                         <button
                             onClick={onNewMission}
                             className="px-8 py-4 bg-white/5 border border-white/10 text-slate-300 font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all active:scale-95"
@@ -222,7 +242,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, onAb
 
             {/* ACTIVE MONITORING DISCLAIMER */}
             {currentStatus !== 'DONE' && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-4 animate-pulse">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
                         <AlertCircle className="w-5 h-5 text-amber-500" />
                     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles, Zap, Gift, Play, ShieldCheck, Laptop, Clipboard, Terminal, Command } from 'lucide-react';
+import { ArrowRight, Sparkles, Zap, Gift, Play, ShieldCheck, Laptop, Clipboard, Terminal, Command, Crown } from 'lucide-react';
 
 interface HeroSectionProps {
     url: string;
@@ -7,9 +7,11 @@ interface HeroSectionProps {
     onAnalyze: () => void;
     onWatchDemo: () => void;
     loading: boolean;
+    user?: import('../types').User | null;
+    onShowPricing?: () => void;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWatchDemo, loading }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWatchDemo, loading, user, onShowPricing }) => {
     return (
         <section className="flex-1 flex flex-col items-center justify-center w-full max-w-[100vw] overflow-hidden animate-fade-in-up px-4 sm:px-6 relative z-10 min-h-[85vh] py-20 md:py-32">
 
@@ -35,25 +37,43 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
 
                     if (!mounted) return <div className="h-8 mb-4" />;
 
-                    return isFirstTime ? (
-                        // FIRST TIME GIFT BADGE
-                        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.2)] backdrop-blur-md animate-fade-in-down mb-6 mx-auto cursor-default hover:bg-amber-500/20 transition-all hover:scale-105 active:scale-95 duration-500">
-                            <Gift className="w-4 h-4 text-amber-500 animate-bounce shrink-0" />
-                            <span className="text-xs font-mono font-bold text-amber-200 tracking-wide uppercase text-center">
-                                First Time Gift: <span className="text-amber-400">30 Free Tokens</span> Included
-                            </span>
-                        </div>
-                    ) : (
-                        // RETURNING USER STATUS BADGE
-                        <div className="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2 rounded-full glass-panel border border-white/5 shadow-2xl backdrop-blur-md animate-fade-in-down mb-6 mx-auto hover:border-emerald-500/30 transition-all duration-500 group cursor-default">
-                            <div className="relative flex h-2 w-2 shrink-0">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </div>
-                            <span className="text-[10px] font-mono font-medium text-slate-400 tracking-[0.2em] uppercase text-center">
-                                <span className="hidden md:inline">System Status: <span className="text-emerald-500/80 group-hover:text-emerald-400 transition-colors">Neural Engine Operational</span></span>
-                                <span className="md:hidden text-emerald-500/80">Systems Online</span>
-                            </span>
+                    return (
+                        <div className="flex flex-col items-center gap-4 mb-6">
+                            {/* TOKEN STATUS FOR MOBILE (PROPERLY WRITTEN) */}
+                            {user && (
+                                <div className="md:hidden flex items-center gap-3 px-4 py-2 rounded-full glass-panel border border-amber-500/30 bg-amber-500/5 shadow-[0_0_20px_rgba(245,158,11,0.1)] active:scale-95 transition-transform" onClick={onShowPricing}>
+                                    <Crown className="w-3.5 h-3.5 text-amber-500" />
+                                    <span className="text-[10px] font-mono font-bold text-amber-200 uppercase tracking-widest leading-none">
+                                        Tokens: {user.tokens ?? 0}
+                                    </span>
+                                    <div className="w-px h-3 bg-white/10 mx-1" />
+                                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest leading-none">
+                                        Add Tokens
+                                    </span>
+                                </div>
+                            )}
+
+                            {isFirstTime ? (
+                                // FIRST TIME GIFT BADGE
+                                <div className="inline-flex flex-wrap items-center justify-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.2)] backdrop-blur-md animate-fade-in-down mx-auto cursor-default hover:bg-amber-500/20 transition-all hover:scale-105 active:scale-95 duration-500">
+                                    <Gift className="w-4 h-4 text-amber-500 animate-bounce shrink-0" />
+                                    <span className="text-xs font-mono font-bold text-amber-200 tracking-wide uppercase text-center">
+                                        First Time Gift: <span className="text-amber-400">30 Free Tokens</span> Included
+                                    </span>
+                                </div>
+                            ) : (
+                                // RETURNING USER STATUS BADGE
+                                <div className="inline-flex flex-wrap items-center justify-center gap-3 px-5 py-2 rounded-full glass-panel border border-white/5 shadow-2xl backdrop-blur-md animate-fade-in-down mx-auto hover:border-emerald-500/30 transition-all duration-500 group cursor-default">
+                                    <div className="relative flex h-2 w-2 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </div>
+                                    <span className="text-[10px] font-mono font-medium text-slate-400 tracking-[0.2em] uppercase text-center">
+                                        <span className="hidden md:inline">System Status: <span className="text-emerald-500/80 group-hover:text-emerald-400 transition-colors">Neural Engine Operational</span></span>
+                                        <span className="md:hidden text-emerald-500/80">Systems Online</span>
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     );
                 })()}
@@ -69,8 +89,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
                         </span>
                     </h1>
 
-                    <p className="text-slate-300 max-w-2xl mx-auto font-sans text-lg md:text-xl leading-relaxed tracking-tight animate-fade-in-up px-4 opacity-0 fill-mode-forwards" style={{ animationDelay: '400ms' }}>
-                        Deploy thousands of authentic, scientifically-weighted responses to any Google Form with <span className="text-amber-200 font-medium">human-like latency</span>.
+                    <p className="text-slate-300 max-w-2xl mx-auto font-mono text-sm md:text-base leading-relaxed tracking-wide animate-fade-in-up px-4 opacity-0 fill-mode-forwards" style={{ animationDelay: '400ms' }}>
+                        Deploy thousands of authentic, scientifically-weighted responses to any Google Form with <span className="text-amber-200 font-bold">human-like latency</span>.
                     </p>
 
                     <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-4 animate-fade-in-up opacity-0 fill-mode-forwards" style={{ animationDelay: '500ms' }}>

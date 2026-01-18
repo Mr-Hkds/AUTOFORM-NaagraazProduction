@@ -21,6 +21,7 @@ import VideoModal from './components/VideoModal';
 import MissionControl from './components/MissionControl';
 import Header from './components/Header';
 import PremiumBackground from './components/PremiumBackground';
+import MatrixReveal from './components/MatrixReveal'; // Imported MatrixReveal
 
 // --- VISUAL COMPONENTS ---
 
@@ -166,28 +167,29 @@ const Footer = () => (
 
         <div className="h-px w-12 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-amber-500/50 transition-all duration-700" />
 
-        <span className="text-[10px] md:text-xs text-amber-500/90 font-serif italic tracking-widest hover:text-amber-400 transition-colors">
+        <span className="text-xs md:text-sm text-amber-500/90 font-serif italic tracking-widest hover:text-amber-400 transition-colors">
           A Naagraaz Production
         </span>
       </div>
 
       {/* Links - Minimalist */}
       <div className="flex items-center gap-8 text-[9px] text-slate-600 font-medium tracking-widest uppercase mb-8">
-        <span className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Privacy</span>
-        <span className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Terms</span>
-        <a href="mailto:NAAGRAAZPRODUCTION@GMAIL.COM" className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Support</a>
+        <span className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Privacy Protocol</span>
+        <span className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Service Terms</span>
+        <a href="mailto:NAAGRAAZPRODUCTION@GMAIL.COM" className="hover:text-white transition-colors cursor-pointer hover:underline underline-offset-4 decoration-amber-500/50">Support Channel</a>
       </div>
 
       {/* Disclaimer Section - System Alert Style */}
       <div className="max-w-4xl mx-auto px-4 mt-8 mb-12">
-        <div className="border border-white/10 bg-white/5 rounded-sm p-4 backdrop-blur-sm">
-          <div className="flex items-start gap-3">
-            <div className="mt-1 text-amber-500 animate-pulse">⚠️</div>
+        <div className="border border-white/5 bg-white/[0.02] rounded-sm p-5 backdrop-blur-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/50" />
+          <div className="flex items-start gap-4">
+            <div className="mt-0.5 text-amber-500/80 font-mono text-xs">[!]</div>
             <div className="text-[10px] md:text-xs text-slate-400 font-mono leading-relaxed text-left">
-              <strong className="text-amber-500 block mb-1 tracking-widest uppercase">System Notice // Use Policy</strong>
-              This automation suite is engineered strictly for <span className="text-white">educational research and analysis</span>.
-              The user bears full responsibility for ensuring compliance with all applicable Terms of Service and legal regulations.
-              The developers assume no liability for operational misuse.
+              <strong className="text-amber-500/90 block mb-2 tracking-widest uppercase text-[9px]">Operational Directive // Educational Use Only</strong>
+              The AutoForm Automation Suite is strictly engineered for <span className="text-slate-200">statistical analysis and educational research</span> purposes.
+              The deployment of this technology implies full user consent and responsibility for compliance with all relevant Terms of Service and legal frameworks.
+              Naagraaz Productions assumes no liability for the operational misuse or unauthorized application of this system.
             </div>
           </div>
         </div>
@@ -203,9 +205,10 @@ const Footer = () => (
           <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
           {/* Signature Text */}
-          <span className="relative z-10 text-lg md:text-xl font-bold font-serif tracking-widest animate-text-shimmer liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-            MR. HARKAMAL
-          </span>
+          <MatrixReveal
+            text="MR. HARKAMAL"
+            className="relative z-10 text-lg md:text-xl font-bold liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+          />
         </div>
       </div>
 
@@ -936,6 +939,8 @@ function App() {
                     onAnalyze={handleAnalyze}
                     onWatchDemo={() => setShowVideoModal(true)}
                     loading={loading}
+                    user={user}
+                    onShowPricing={() => setShowPricing(true)}
                   />
                 )}
 
@@ -948,6 +953,15 @@ function App() {
                         <div className="flex gap-3">
                           <Badge color="obsidian">{analysis.questions.length} Fields</Badge>
                           <Badge color="gold">Algorithm Optimized</Badge>
+                          {user && (user.tokens || 0) < 50 && (
+                            <button
+                              onClick={() => setShowPricing(true)}
+                              className="text-[10px] text-amber-500 hover:text-amber-400 font-bold uppercase tracking-widest flex items-center gap-1.5 animate-pulse ml-1"
+                            >
+                              <Crown className="w-3 h-3" />
+                              Low on tokens? Refill
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
