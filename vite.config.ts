@@ -16,21 +16,71 @@ export default defineConfig(({ mode }) => {
         name: 'configure-response-headers',
         configureServer: (server) => {
           server.middlewares.use(async (req, res, next) => {
-            // Handle /api/deduct-tokens (SIMULATION for Local Dev)
+            // Handle /api/deduct-tokens (Local Server Simulation)
             if (req.url?.startsWith('/api/deduct-tokens') && req.method === 'POST') {
-              console.log('[Vite Proxy] Handling Token Deduction Locally...');
+              console.log('[Vite Proxy] Processing Token Deduction...');
 
               let body = '';
               req.on('data', chunk => body += chunk.toString());
               req.on('end', async () => {
                 try {
                   const { uid, amount } = JSON.parse(body);
-                  // In local simulation, we calculate what the tokens WOULD be
-                  // This allows the UI to show the deduction correctly even without a real DB update
-                  const newTokens = Math.max(0, 100 - amount); // Mock balance of 100 for dev
+
+                  // 1. Try Real Persistence (if keys exist)
+                  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+                    try {
+                      // Dynamic Import to avoid bundling issues if unused
+                      const admin = await import('firebase-admin');
+
+                      // Init Admin if needed
+                      if (admin.default.apps.length === 0) {
+                        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                        admin.default.initializeApp({
+                          credential: admin.default.credential.cert(serviceAccount)
+                        });
+                        console.log('[Vite Proxy] 🔥 Firebase Admin Initialized');
+                      }
+
+                      const db = admin.default.firestore();
+                      const userRef = db.collection('users').doc(uid);
+
+                      await db.runTransaction(async (t) => {
+                        const doc = await t.get(userRef);
+                        if (!doc.exists) throw new Error("User not found");
+                        const current = doc.data()?.tokens || 0;
+                        if (current < amount) throw new Error("Insufficient funds");
+
+                        t.update(userRef, {
+                          tokens: admin.default.firestore.FieldValue.increment(-amount),
+                          responsesUsed: admin.default.firestore.FieldValue.increment(amount)
+                        });
+                        return current - amount;
+                      });
+
+                      console.log(`[Vite Proxy] ✅ PERSISTED deduction of ${amount} tokens for ${uid}`);
+                      // Fetch new balance to return exact
+                      const freshSnap = await userRef.get();
+                      const newTokens = freshSnap.data()?.tokens ?? 0;
+
+                      res.setHeader('Content-Type', 'application/json');
+                      res.statusCode = 200;
+                      res.end(JSON.stringify({ success: true, newTokens }));
+                      return; // Done
+
+                    } catch (persistErr) {
+                      console.error('[Vite Proxy] ⚠️ Persistence Failed (Falling back to mock):', persistErr.message);
+                      // Fallthrough to mock if auth fails
+                    }
+                  } else {
+                    console.log('[Vite Proxy] ℹ️ No FIREBASE_SERVICE_ACCOUNT found in .env. Using non-persistent mock.');
+                  }
+
+                  // 2. Mock Fallback (Visual Only)
+                  const newTokens = Math.max(0, 100 - amount);
                   res.setHeader('Content-Type', 'application/json');
                   res.statusCode = 200;
                   res.end(JSON.stringify({ success: true, newTokens }));
+
                 } catch (error) {
                   res.statusCode = 500;
                   res.end(JSON.stringify({ error: error.message }));
