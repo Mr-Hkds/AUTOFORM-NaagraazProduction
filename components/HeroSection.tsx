@@ -175,51 +175,40 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
                         </button>
                     </div>
 
-                    {/* Trust Indicator - Directly Below Input */}
-                    <div className="mt-4 flex justify-center opacity-0 fill-mode-forwards animate-fade-in" style={{ animationDelay: '650ms' }}>
-                        <div className="relative group flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.02] overflow-hidden">
-                            {/* Green Shimmer Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-shimmer-flow pointer-events-none" />
 
-                            {/* Content */}
-                            <ShieldCheck className="w-3 h-3 text-emerald-500 relative z-10" />
-                            <span className="text-[10px] text-emerald-100/80 font-mono uppercase tracking-widest relative z-10">
-                                Secured Payment via <span className="font-bold text-emerald-400">Razorpay</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Secondary Actions */}
-                    <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-6 opacity-0 fill-mode-forwards" style={{ animationDelay: '700ms' }}>
+                    {/* Secondary Actions - Refactored */}
+                    <div className="mt-8 flex items-center justify-center gap-4 opacity-0 fill-mode-forwards animate-fade-in" style={{ animationDelay: '700ms' }}>
                         <button
                             onClick={onWatchDemo}
-                            className="flex items-center gap-2 text-slate-400 text-xs font-medium hover:text-white transition-colors group"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-amber-500/10 transition-all group active:scale-95"
                         >
-                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:border-amber-500/50 group-hover:bg-amber-500/10 transition-colors">
-                                <Play className="w-3 h-3 fill-current group-hover:text-amber-400" />
-                            </div>
-                            <span className="uppercase tracking-widest font-mono text-[10px]">Watch Demo</span>
+                            <Play className="w-3 h-3 fill-current text-slate-400 group-hover:text-amber-400" />
+                            <span className="uppercase tracking-[0.2em] font-mono text-[10px] text-slate-400 group-hover:text-amber-200">Watch Demo</span>
                         </button>
 
-                        <div className="hidden md:block w-px h-4 bg-white/10" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
 
                         <div className="flex items-center gap-2">
-                            <div className="flex -space-x-2">
-                                {[...Array(3)].map((_, i) => (
-                                    <div key={i} className="w-6 h-6 rounded-full bg-slate-800 border border-black ring-2 ring-[#020617] flex items-center justify-center text-[8px] font-bold text-slate-500">
-                                        AI
-                                    </div>
-                                ))}
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-wide">
-                                <span className="text-emerald-500 font-bold">4.2k+</span> Sessions Active
+                            <span className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">
+                                V4.0.0 <span className="text-slate-600">STABLE</span>
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Razorpay Trust Indicator - REMOVED from bottom */}
+                {/* Trust Indicator - Moved to Bottom */}
+                <div className="mt-12 flex justify-center opacity-0 fill-mode-forwards animate-fade-in" style={{ animationDelay: '800ms' }}>
+                    <div className="relative group flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.02] overflow-hidden">
+                        {/* Green Shimmer Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-shimmer-flow pointer-events-none" />
 
+                        {/* Content */}
+                        <ShieldCheck className="w-3 h-3 text-emerald-500 relative z-10" />
+                        <span className="text-[9px] text-emerald-100/80 font-mono uppercase tracking-[0.2em] relative z-10">
+                            Secured Payment via <span className="font-bold text-emerald-400">Razorpay</span>
+                        </span>
+                    </div>
+                </div>
             </div>
         </section>
     );

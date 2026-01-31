@@ -164,6 +164,29 @@ export const addTokens = async (uid: string, amount: number) => {
     }
 };
 
+export const recordTransaction = async (paymentId: string, amount: number, tokens: number, uid: string, packId: string) => {
+    try {
+        const transactionRef = doc(db, "transactions", paymentId);
+        await setDoc(transactionRef, {
+            userId: uid,
+            paymentId,
+            amount,
+            tokens,
+            packId,
+            status: 'completed',
+            method: 'razorpay_upi', // Simplified for client-side
+            createdAt: serverTimestamp(),
+            timestamp: new Date().toISOString(),
+            source: 'client_fallback' // Mark as fallback to distinguish from server-side
+        });
+        console.log("[AuthService] Transaction recorded successfully");
+        return true;
+    } catch (e) {
+        console.error("Failed to record transaction:", e);
+        return false;
+    }
+};
+
 // Legacy support: Increment usage count (now just a wrapper or deprecated)
 export const incrementUsageCount = async (uid: string, count: number) => {
     // Replaced by deductTokens in new flow, keeping for backward compat if needed

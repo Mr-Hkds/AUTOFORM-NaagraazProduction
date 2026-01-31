@@ -3,26 +3,27 @@ import { FormQuestion, FormAnalysis } from '../types';
 // Professional Statistical Analysis Engine - No dependency on external AI APIs
 
 // --- DEMOGRAPHIC DISTRIBUTION PATTERNS ---
+// --- DEMOGRAPHIC DISTRIBUTION PATTERNS ---
 const DEMOGRAPHIC_PATTERNS: Record<string, number[]> = {
-  'AGE': [5, 15, 30, 25, 15, 10],              // Young adults peak
-  'YEAR': [5, 10, 40, 30, 10, 5],              // Recent years weighted
-  'SATISFACTION': [5, 10, 15, 40, 30],         // Positive bias
-  'RATE': [5, 5, 20, 40, 30],                  // High ratings weighted
-  'LIKELY': [10, 10, 20, 30, 30],              // Moderate to high likelihood
-  'INCOME': [15, 25, 30, 20, 10],              // Middle-class majority
-  'EDUCATION': [5, 20, 45, 20, 10],            // Bachelor's degree peak
-  'GENDER': [48, 48, 4],                       // Balanced distribution
-  'DEFAULT_5': [10, 20, 40, 20, 10],           // Standard bell curve
-  'DEFAULT_4': [15, 35, 35, 15],               // 4-option bell curve
-  'DEFAULT_3': [25, 50, 25],                   // 3-option bell curve
-  'YES_NO': [60, 40]                           // Slight positive bias
+  'AGE': [8, 25, 35, 20, 8, 4],               // More realistic skew towards 18-35
+  'YEAR': [5, 10, 45, 30, 8, 2],              // Recent years weighted
+  'SATISFACTION': [3, 7, 15, 45, 30],         // Strong positive bias (realistic for feedback)
+  'RATE': [2, 8, 20, 45, 25],                 // High ratings weighted
+  'LIKELY': [5, 10, 25, 40, 20],              // Lean towards positive/likely
+  'INCOME': [20, 30, 30, 15, 5],              // Bell curve slightly lower (Middle-class)
+  'EDUCATION': [5, 25, 40, 20, 10],           // Bachelor's peak
+  'GENDER': [49, 49, 2],                       // Standard distribution
+  'DEFAULT_5': [5, 15, 40, 30, 10],           // Skewed bell curve (Positive lean)
+  'DEFAULT_4': [10, 35, 40, 15],              // Skewed 4-option
+  'DEFAULT_3': [20, 55, 25],                  // Center-heavy 3-option
+  'YES_NO': [75, 25]                          // Strong affirmative bias
 };
 
 const calculateDemographicWeights = (questionText: string, options: string[]): number[] => {
   const normalizedText = questionText.toUpperCase();
   const optionCount = options.length;
 
-  // Special case: Gender questions
+  // --- SPECIAL HANDLING: GENDER ---
   if (normalizedText.includes('GENDER') || normalizedText.includes('SEX')) {
     const weights = options.map(opt => {
       const val = opt.toLowerCase();
@@ -33,44 +34,82 @@ const calculateDemographicWeights = (questionText: string, options: string[]): n
     return total > 0 ? weights.map(w => Math.round((w / total) * 100)) : weights;
   }
 
-  // Binary questions (Yes/No, True/False)
-  if (optionCount === 2 && ['yes', 'no', 'true', 'false'].some(k => options[0].toLowerCase().includes(k))) {
-    return [60, 40];
+  // --- SPECIAL HANDLING: LIKERT SCALES (Disagree to Agree) ---
+  // If we detect a scale, we force a "realistic human" bias (lean towards Agree)
+  const optionValues = options.map(o => o.toLowerCase());
+  const hasStrongDisagree = optionValues.some(v => v.includes('strongly disagree') || v.includes('don\'t agree'));
+  const hasStrongAgree = optionValues.some(v => v.includes('strongly agree') || v.includes('highly likely'));
+
+  if (hasStrongDisagree || hasStrongAgree) {
+    // Generate a distribution that gives less weight to the "Disagree" ends
+    // Usually: 5% Strongly Disagree, 10% Disagree, 20% Neutral, 45% Agree, 20% Strongly Agree
+    if (optionCount === 5) return [5, 10, 20, 45, 20];
+    if (optionCount === 4) return [5, 15, 50, 30]; // Disagree, Neutral, Agree, Strongly Agree
+    if (optionCount === 7) return [3, 5, 10, 22, 35, 15, 10]; // Granular Likert
   }
 
-  // Pattern matching for known demographic categories
-  let weights: number[] = [];
+  // --- BARKER/DETECTION: DISAGREE OPTIONS ---
+  // For any list where we find 'disagree' or 'unsatisfied', penalize them
+  const weights = Array(optionCount).fill(0);
+  let totalAssigned = 0;
+  let remainingIndices: number[] = [];
+
+  options.forEach((opt, i) => {
+    const val = opt.toLowerCase();
+    if (val.includes('strongly disagree') || val.includes('very unsatisfied') || val.includes('poor')) {
+      weights[i] = 5;
+    } else if (val.includes('disagree') || val.includes('unsatisfied') || val.includes('bad')) {
+      weights[i] = 10;
+    } else {
+      remainingIndices.push(i);
+    }
+    totalAssigned += weights[i];
+  });
+
+  if (remainingIndices.length > 0 && totalAssigned < 100) {
+    // Distribute remaining 100 among non-negative options
+    const chunk = Math.floor((100 - totalAssigned) / remainingIndices.length);
+    remainingIndices.forEach((idx, i) => {
+      weights[idx] = i === remainingIndices.length - 1 ? (100 - totalAssigned) : chunk;
+      totalAssigned += weights[idx];
+    });
+    return weights;
+  }
+
+  // --- PATTERN MATCHING ---
+  let finalWeights: number[] = [];
   const patternKey = Object.keys(DEMOGRAPHIC_PATTERNS).find(k => normalizedText.includes(k));
   if (patternKey) {
     const basePattern = DEMOGRAPHIC_PATTERNS[patternKey];
-    if (basePattern.length === optionCount) weights = [...basePattern];
+    if (basePattern.length === optionCount) finalWeights = [...basePattern];
   }
 
-  // Apply default bell curves if no pattern matched
-  if (weights.length === 0) {
-    if (optionCount === 5) weights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_5']];
-    else if (optionCount === 4) weights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_4']];
-    else if (optionCount === 3) weights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_3']];
+  // Default Skewed Bell Curves
+  if (finalWeights.length === 0) {
+    if (optionCount === 5) finalWeights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_5']];
+    else if (optionCount === 4) finalWeights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_4']];
+    else if (optionCount === 3) finalWeights = [...DEMOGRAPHIC_PATTERNS['DEFAULT_3']];
+    else if (optionCount === 2) finalWeights = [...DEMOGRAPHIC_PATTERNS['YES_NO']];
   }
 
-  // Fallback: Generate uniform distribution with slight randomization
-  if (weights.length === 0) {
+  // Fallback: Uniform distribution
+  if (finalWeights.length === 0) {
     const chunk = Math.floor(100 / optionCount);
-    let remainder = 100;
+    let rem = 100;
     for (let i = 0; i < optionCount - 1; i++) {
-      weights.push(chunk);
-      remainder -= chunk;
+      finalWeights.push(chunk);
+      rem -= chunk;
     }
-    weights.push(remainder);
+    finalWeights.push(rem);
   }
 
-  // Ensure weights sum to exactly 100
-  const currentSum = weights.reduce((a, b) => a + b, 0);
+  // Ensure exactly 100 total
+  const currentSum = finalWeights.reduce((a, b) => a + b, 0);
   if (currentSum !== 100) {
-    weights[weights.length - 1] += (100 - currentSum);
+    finalWeights[finalWeights.length - 1] += (100 - currentSum);
   }
 
-  return weights;
+  return finalWeights;
 };
 
 const createBatches = <T>(array: T[], size: number): T[][] => {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, CheckCircle, Upload, AlertCircle, QrCode, Coins, Zap, Crown, CreditCard, Shield, Lock, ShieldCheck } from 'lucide-react';
 import { createPaymentOrder, initializeRazorpayCheckout, verifyAndCapturePayment } from '../services/razorpayService';
-import { addTokens } from '../services/authService';
-
+import { addTokens, recordTransaction } from '../services/authService';
 import { User } from '../types';
+import { savePendingPayment } from '../services/syncService';
 
 interface PaymentModalProps {
     onClose: () => void;
@@ -146,20 +146,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
 
             console.log('🎉 Payment Verified!', verificationResult);
 
-            // Manual Client-Side Credit (Reliability Fallback)
-            // Essential for local dev where Vite proxy doesn't handle DB updates
-            console.log(`💳 Crediting ${selectedPack.tokens} tokens to user...`);
-            await addTokens(user.uid, selectedPack.tokens);
-
-            // Force a small delay to allow Firestore propagation if using real-time listeners
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            // Verification successful, server has already credited tokens securely.
             setSuccess(true);
             setRazorpayProcessing(false);
 
         } catch (error: any) {
             console.error('❌ Payment success handler error:', error);
-            setError(error.message || 'Failed to capture payment. Please contact support with your payment ID.');
+
+            // RELIABILITY FIX: Save for background sync if it was a verification failure
+            if (response.razorpay_payment_id) {
+                await savePendingPayment(
+                    response.razorpay_payment_id,
+                    selectedPack.price,
+                    user.uid
+                );
+            }
+
+            setError(error.message || 'Failed to capture payment. Our system will retry automatically in the background.');
             setRazorpayProcessing(false);
         }
     };

@@ -25,24 +25,15 @@ service cloud.firestore {
       allow read: if isAuthenticated() && isOwner(userId);
       
       // Protect sensitive fields for non-admins
-      // Protect sensitive fields for non-admins, BUT allow safe deduction logic
-      allow update: if isAuthenticated() && isOwner(userId) 
-                    && (
-                      // 1. Standard Profile Updates (no sensitivity)
-                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['tokens', 'isPremium', 'responsesUsed', 'isAdmin']))
-                      ||
-                      // 2. Safe Token Deduction (ROBUST MODE)
-                      // Allow ANY update as long as:
-                      // - Tokens strictly DECREASE
-                      // - Premium/Admin status helps CONSTANT (no privilege escalation)
-                      (
-                        request.resource.data.tokens < resource.data.tokens &&
-                        request.resource.data.isAdmin == resource.data.isAdmin &&
-                        request.resource.data.isPremium == resource.data.isPremium
-                      )
-                    );
+      // ONLY allow the server-side Admin SDK to update tokens, isAdmin, isPremium, and responsesUsed
+      // This is the CRITICAL fix for the security vulnerability identified in the audit.
+      allow update: if isAuthenticated() && isOwner(userId) && 
+                    !request.resource.data.diff(resource.data).affectedKeys()
+                    .hasAny(['tokens', 'isAdmin', 'isPremium', 'responsesUsed']);
       
-      allow create: if isAuthenticated() && isOwner(userId) && request.resource.data.tokens == 15;
+      allow create: if isAuthenticated() && isOwner(userId) && 
+                    request.resource.data.tokens == 15 && 
+                    request.resource.data.isAdmin == false;
     }
 
     // PAYMENT REQUESTS
@@ -56,6 +47,7 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read, write: if isAdmin();
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
     }
   }
 }

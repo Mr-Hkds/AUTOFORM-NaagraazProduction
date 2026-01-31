@@ -241,14 +241,17 @@ export const generateAutomationScript = (
   
   const selectWeighted = (options) => {
     if (!options || options.length === 0) return { value: "" };
-    const total = options.reduce((acc, opt) => acc + (opt.weight || 0), 0);
-    if (total === 0) return options[Math.floor(Math.random() * options.length)];
+    const validOptions = options.filter(o => (o.weight || 0) > 0);
+    if (validOptions.length === 0) return options[Math.floor(Math.random() * options.length)];
+    
+    const total = validOptions.reduce((acc, opt) => acc + (opt.weight || 0), 0);
     let random = Math.random() * total;
-    for (const opt of options) {
+    
+    for (const opt of validOptions) {
       if (random < (opt.weight || 0)) return opt;
       random -= (opt.weight || 0);
     }
-    return options[options.length - 1];
+    return validOptions[validOptions.length - 1];
   };
 
   // --- DOM OPS ---
@@ -402,6 +405,9 @@ export const generateAutomationScript = (
     const items = Array.from(doc.querySelectorAll('div[role="listitem"]'));
     
     for (const item of items) {
+      // SECTION FIX: Check if field is visible
+      const style = win.getComputedStyle(item);
+      if (style.display === 'none' || style.visibility === 'hidden' || item.offsetParent === null) continue;
       // Get Heading
       const heading = item.querySelector('div[role="heading"]');
       const itemTitleRaw = heading ? heading.innerText : item.innerText;
@@ -631,7 +637,8 @@ export const generateAutomationScript = (
               const nextCandidate = candidates.find(b => {
                   const t = normalize(b.innerText);
                   if (t.includes('back') || t.includes('clear')) return false;
-                  return t === 'next' || t.includes('next') || t === 'suivant' || t === 'siguiente' || t === 'continue';
+                  // Expanded keywords for better multi-section support
+                  return t === 'next' || t.includes('next') || t === 'suivant' || t === 'siguiente' || t === 'continue' || t.includes('page') || t.includes('section') || t.includes('página') || t === 'adelante';
               });
               
               const submitBtn = submitCandidate ? getClickable(submitCandidate) : null;
@@ -652,11 +659,16 @@ export const generateAutomationScript = (
                   await sleep(2000); 
                   let wait = 0;
                   while (wait < 10) {
-                      const currentNext = Array.from(runner.document.querySelectorAll('div[role="button"]'))
-                                          .find(b => normalize(b.innerText) === 'next');
-                      // If next button is gone (or replaced), or submit appears
-                      const currentSubmit = Array.from(runner.document.querySelectorAll('div[role="button"]'))
-                                            .find(b => normalize(b.innerText) === 'submit');
+                      const currentNext = Array.from(runner.document.querySelectorAll('div[role="button"], button'))
+                                          .find(b => {
+                                              const t = normalize(b.innerText);
+                                              return t === 'next' || t.includes('next') || t === 'suivant' || t === 'siguiente' || t === 'continue';
+                                          });
+                      const currentSubmit = Array.from(runner.document.querySelectorAll('div[role="button"], button'))
+                                            .find(b => {
+                                                const t = normalize(b.innerText);
+                                                return t === 'submit' || t.includes('submit') || t === 'envoyer' || t === 'enviar';
+                                            });
                       
                       if (!currentNext || currentSubmit) break;
                       await sleep(500);

@@ -23,6 +23,7 @@ export interface FormQuestion {
   type: QuestionType;
   options: FormOption[];
   required: boolean;
+  pageIndex?: number; // 0-indexed section/page number
   // For text inputs, AI can suggest realistic random answers
   aiTextSuggestions?: string[];
 }
@@ -33,6 +34,7 @@ export interface FormAnalysis {
   questions: FormQuestion[];
   aiReasoning: string;
   hiddenFields?: Record<string, string>; // Added for submitting hidden inputs like fbzx
+  targetCount?: number; // Added to persist target count through analysis
 }
 
 export interface ScriptConfig {

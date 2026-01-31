@@ -10,6 +10,7 @@ import { generateIndianNames } from './utils/indianNames';
 import { generateAIPrompt, parseAIResponse } from './utils/parsingUtils';
 import { signInWithGoogle, logout, subscribeToUserProfile, incrementUsageCount, trackAuthState } from './services/authService';
 import { generateScriptToken, checkRateLimit, getTokenExpirationHours, TokenMetadata } from './services/securityService';
+import { syncPendingPayments } from './services/syncService';
 import { FormAnalysis, User } from './types';
 
 import PaymentModal from './components/PaymentModal';
@@ -169,7 +170,7 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
                 <div className="h-px w-12 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-amber-500/50 transition-all duration-700" />
 
                 <span className="text-xs md:text-sm text-amber-500/90 font-serif italic tracking-widest hover:text-amber-400 transition-colors">
-                    A Naagraaz Production
+                    A Trikala Production
                 </span>
             </div>
 
@@ -215,7 +216,7 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
                             <strong className="text-amber-500/90 block mb-2 tracking-widest uppercase text-[9px]">Operational Directive // Educational Use Only</strong>
                             The AutoForm Automation Suite is strictly engineered for <span className="text-slate-200">statistical analysis and educational research</span> purposes.
                             The deployment of this technology implies full user consent and responsibility for compliance with all relevant Terms of Service and legal frameworks.
-                            Naagraaz Productions assumes no liability for the operational misuse or unauthorized application of this system.
+                            Trikala Productions assumes no liability for the operational misuse or unauthorized application of this system.
                         </div>
                     </div>
                 </div>
@@ -399,6 +400,10 @@ function App() {
             const unsub = subscribeToUserProfile(user.uid, (updatedUser) => {
                 if (updatedUser) setUser(updatedUser);
             });
+
+            // RELIABILITY: Trigger background sync on login
+            syncPendingPayments();
+
             return () => unsub();
         }
     }, [user?.uid]);
@@ -431,6 +436,14 @@ function App() {
             return true;
         }
         return false;
+    };
+
+    const smartDelay = async (ms: number) => {
+        const start = Date.now();
+        while (Date.now() - start < ms) {
+            if ((window as any).__AF_STOP_SIGNAL) return;
+            await new Promise(r => setTimeout(r, 100)); // Check every 100ms
+        }
     };
 
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -684,10 +697,14 @@ function App() {
             });
 
             // Add page history to ensure submission works for multi-page forms
+            // If the form has questions on pages 0, 1, 2... pageHistory should be 0,1,2
+            const maxPageIndex = analysis?.questions.reduce((max, q) => Math.max(max, q.pageIndex || 0), 0) || 0;
+            const pageHistory = Array.from({ length: maxPageIndex + 1 }, (_, i) => i).join(',');
+
             const hist = document.createElement('input');
             hist.type = 'hidden';
             hist.name = 'pageHistory';
-            hist.value = '0';
+            hist.value = pageHistory;
             form.appendChild(hist);
 
             document.body.appendChild(form);
@@ -773,14 +790,14 @@ function App() {
             });
 
             pushLog(`Handshake verified. Establishing secure neural link...`);
-            await new Promise(r => setTimeout(r, 2000)); // Immersion delay
+            await smartDelay(2000); // Immersion delay
 
             for (let i = 0; i < targetCount; i++) {
                 // Check for Abort
                 if ((window as any).__AF_STOP_SIGNAL) break;
 
                 pushLog(`Response #${i + 1}: Simulating human reasoning...`);
-                await new Promise(r => setTimeout(r, 1500 + Math.random() * 2000)); // Thinking delay
+                await smartDelay(1500 + Math.random() * 2000); // Thinking delay
 
                 pushLog(`Response #${i + 1}: Generating optimized payload...`);
 
@@ -880,11 +897,11 @@ function App() {
                 if (successCount % 15 === 0 && successCount < targetCount && successCount > 0) {
                     const cooldownSecs = 5;
                     pushLog(`IP SAFETY: Automatic cooldown triggered. Waiting ${cooldownSecs}s to prevent blocking...`, 'COOLDOWN');
-                    await new Promise(r => setTimeout(r, cooldownSecs * 1000));
+                    await smartDelay(cooldownSecs * 1000);
                 } else {
                     // Natural Human-scale Jitter/Delay
                     const jitter = Math.floor(Math.random() * 4000) + 2000;
-                    await new Promise(r => setTimeout(r, jitter));
+                    await smartDelay(jitter);
                 }
             }
 
@@ -1264,16 +1281,51 @@ function App() {
                                                 </div>
 
                                                 <div className="glass-panel p-6 rounded-xl space-y-4">
-                                                    <div className="flex justify-between text-xs font-bold text-white uppercase tracking-widest">
-                                                        <span>Interaction Delay</span>
-                                                        <span className="text-amber-400 font-mono">{delayMin}ms</span>
+                                                    <div className="flex justify-between items-center text-xs font-bold text-white uppercase tracking-widest">
+                                                        <div className="flex items-center gap-2">
+                                                            <Zap className="w-4 h-4 text-amber-500" /> Interaction Speed
+                                                        </div>
+                                                        <span className={`font-mono ${delayMin <= 100 ? 'text-red-400' : delayMin <= 500 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                                            {delayMin === 1500 ? 'Slow' : delayMin === 500 ? 'Fast' : 'Fastest'} ({delayMin}ms)
+                                                        </span>
                                                     </div>
-                                                    <input
-                                                        type="range" min="100" max="2000"
-                                                        value={delayMin}
-                                                        onChange={(e) => setDelayMin(Number(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                                    />
+
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { id: 'slow', label: 'Slow', val: 1500, desc: 'Safe & Stealthy', color: 'emerald' },
+                                                            { id: 'fast', label: 'Fast', val: 500, desc: 'Recommended', color: 'amber' },
+                                                            { id: 'fastest', label: 'Fastest', val: 100, desc: 'Extreme Speed', color: 'red' }
+                                                        ].map((speed) => (
+                                                            <button
+                                                                key={speed.id}
+                                                                onClick={() => setDelayMin(speed.val)}
+                                                                className={`flex flex-col items-center py-3 px-2 rounded-xl border transition-all active:scale-95 ${delayMin === speed.val
+                                                                    ? `bg-${speed.color}-500/20 border-${speed.color}-500 text-white shadow-lg`
+                                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
+                                                                    }`}
+                                                            >
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">{speed.label}</span>
+                                                                <span className="text-[8px] opacity-60 text-center leading-tight">{speed.desc}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {delayMin === 100 && (
+                                                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-[9px] text-red-200/80 leading-relaxed font-mono animate-pulse">
+                                                            <span className="text-red-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
+                                                                <AlertCircle className="w-3 h-3" /> System Warning
+                                                            </span>
+                                                            Fastest mode bypasses human-simulation protocols. Higher risk of detection by strict anti-bot systems.
+                                                        </div>
+                                                    )}
+                                                    {delayMin === 500 && (
+                                                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[9px] text-amber-200/80 leading-relaxed font-mono">
+                                                            <span className="text-amber-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
+                                                                <Sparkles className="w-3 h-3" /> Optimization Tip
+                                                            </span>
+                                                            Fast mode is balanced for speed and organic simulation. Recommended for most projects.
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1484,39 +1536,123 @@ function App() {
 
                                                                 return (
                                                                     <div key={q.id} className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                                                                        <div className="flex justify-between items-start mb-4">
-                                                                            <span className="text-sm text-slate-200 font-medium max-w-[80%] group-hover:text-white transition-colors capitalize">{q.title}</span>
-                                                                            <span className="text-[9px] bg-white/5 px-2 py-1 rounded text-slate-500 font-mono uppercase tracking-tighter opacity-60">{q.type}</span>
+                                                                        <div className="flex justify-between items-start mb-3">
+                                                                            <span className="text-sm text-slate-200 font-medium max-w-[70%] group-hover:text-white transition-colors capitalize">{q.title}</span>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-[9px] bg-white/5 px-2 py-1 rounded text-slate-500 font-mono uppercase tracking-tighter opacity-60">{q.type}</span>
+                                                                            </div>
                                                                         </div>
 
-                                                                        <div className="space-y-3">
+                                                                        {/* Quick Actions */}
+                                                                        <div className="flex gap-2 mb-4">
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const newAnalysis = { ...analysis };
+                                                                                    const options = [...newAnalysis.questions[originalIdx].options];
+                                                                                    const equalWeight = Math.floor(100 / options.length);
+                                                                                    const remainder = 100 - (equalWeight * options.length);
+
+                                                                                    options.forEach((opt, i) => {
+                                                                                        options[i] = { ...opt, weight: equalWeight + (i === 0 ? remainder : 0) };
+                                                                                    });
+
+                                                                                    newAnalysis.questions[originalIdx].options = options;
+                                                                                    setAnalysis(newAnalysis);
+                                                                                }}
+                                                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all active:scale-95"
+                                                                            >
+                                                                                <RotateCcw className="w-3 h-3" />
+                                                                                <span className="text-[9px] font-bold uppercase tracking-wider">Balance Evenly</span>
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div className="space-y-4">
                                                                             {q.options.slice(0, 10).map((opt, oIdx) => (
-                                                                                <div key={oIdx} className="flex items-center gap-3 text-[11px]">
-                                                                                    <div className="w-12 shrink-0">
+                                                                                <div key={oIdx} className="space-y-1.5">
+                                                                                    {/* Option name and percentage */}
+                                                                                    <div className="flex items-center justify-between text-[11px]">
+                                                                                        <span className="text-slate-400 truncate max-w-[70%]" title={opt.value}>{opt.value}</span>
+                                                                                        <span className="text-amber-400 font-mono font-bold text-xs tabular-nums">{opt.weight || 0}%</span>
+                                                                                    </div>
+
+                                                                                    {/* Interactive slider */}
+                                                                                    <div className="relative group/slider">
                                                                                         <input
-                                                                                            type="number"
-                                                                                            min="0" max="100"
+                                                                                            type="range"
+                                                                                            min="0"
+                                                                                            max="100"
                                                                                             value={opt.weight || 0}
                                                                                             onChange={(e) => {
-                                                                                                const val = parseInt(e.target.value) || 0;
+                                                                                                const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
                                                                                                 const newAnalysis = { ...analysis };
-                                                                                                newAnalysis.questions[originalIdx].options[oIdx].weight = val;
+                                                                                                const options = [...newAnalysis.questions[originalIdx].options];
+
+                                                                                                // 1. Update the target option
+                                                                                                options[oIdx] = { ...options[oIdx], weight: val };
+
+                                                                                                // 2. Proportional redistribution
+                                                                                                const remaining = 100 - val;
+                                                                                                const otherIndices = options.map((_, i) => i).filter(i => i !== oIdx);
+
+                                                                                                if (otherIndices.length > 0) {
+                                                                                                    const sumOthers = otherIndices.reduce((sum, i) => sum + (options[i].weight || 0), 0);
+
+                                                                                                    if (sumOthers > 0) {
+                                                                                                        // Redistribute proportionally
+                                                                                                        otherIndices.forEach(i => {
+                                                                                                            options[i] = {
+                                                                                                                ...options[i],
+                                                                                                                weight: Math.round((options[i].weight / sumOthers) * remaining)
+                                                                                                            };
+                                                                                                        });
+                                                                                                    } else {
+                                                                                                        // Redistribute equally if others are 0
+                                                                                                        const equalShare = Math.floor(remaining / otherIndices.length);
+                                                                                                        otherIndices.forEach(i => {
+                                                                                                            options[i] = { ...options[i], weight: equalShare };
+                                                                                                        });
+                                                                                                    }
+
+                                                                                                    // 3. Normalization (Fix rounding errors)
+                                                                                                    const currentSum = options.reduce((sum, opt) => sum + (opt.weight || 0), 0);
+                                                                                                    const diff = 100 - currentSum;
+                                                                                                    if (diff !== 0) {
+                                                                                                        // Add/Subtract difference from the first "other" option that isn't the one we changed
+                                                                                                        const adjustmentIdx = otherIndices[0];
+                                                                                                        options[adjustmentIdx] = {
+                                                                                                            ...options[adjustmentIdx],
+                                                                                                            weight: Math.max(0, (options[adjustmentIdx].weight || 0) + diff)
+                                                                                                        };
+                                                                                                    }
+                                                                                                }
+
+                                                                                                newAnalysis.questions[originalIdx].options = options;
                                                                                                 setAnalysis(newAnalysis);
                                                                                             }}
-                                                                                            className="w-full bg-[#020617] border border-white/10 rounded px-1 py-1 text-center font-mono text-amber-500 focus:border-amber-500/50 outline-none h-7"
+                                                                                            className="w-full h-2 bg-slate-800/50 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400 transition-all"
+                                                                                            style={{
+                                                                                                background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${opt.weight}%, rgb(30 41 59 / 0.5) ${opt.weight}%, rgb(30 41 59 / 0.5) 100%)`
+                                                                                            }}
                                                                                         />
+                                                                                        {/* Visual indicator bar underneath */}
+                                                                                        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white/5 rounded-full overflow-hidden pointer-events-none">
+                                                                                            <div
+                                                                                                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-300"
+                                                                                                style={{ width: `${opt.weight}%` }}
+                                                                                            />
+                                                                                        </div>
                                                                                     </div>
-                                                                                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                                                        <div className="h-full bg-gradient-to-r from-amber-700 to-amber-500 transition-all duration-500" style={{ width: `${opt.weight}%` }} />
-                                                                                    </div>
-                                                                                    <div className="w-32 truncate text-slate-500 text-[10px]" title={opt.value}>{opt.value}</div>
                                                                                 </div>
                                                                             ))}
 
                                                                             {(q.type === 'MULTIPLE_CHOICE' || q.type === 'CHECKBOXES' || q.type === 'DROPDOWN') && (
-                                                                                <div className="flex justify-end pt-2 border-t border-white/5 mt-2">
-                                                                                    <span className={`text-[10px] font-mono font-bold ${q.options.reduce((a, b) => a + (b.weight || 0), 0) === 100 ? 'text-emerald-500' : 'text-red-400'}`}>
-                                                                                        FIELD TOTAL: {q.options.reduce((a, b) => a + (b.weight || 0), 0)}%
+                                                                                <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-3">
+                                                                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Total Distribution</span>
+                                                                                    <span className={`text-[11px] font-mono font-bold px-2 py-1 rounded ${q.options.reduce((a, b) => a + (b.weight || 0), 0) === 100
+                                                                                        ? 'text-emerald-400 bg-emerald-500/10'
+                                                                                        : 'text-red-400 bg-red-500/10'
+                                                                                        }`}>
+                                                                                        {q.options.reduce((a, b) => a + (b.weight || 0), 0)}%
                                                                                     </span>
                                                                                 </div>
                                                                             )}

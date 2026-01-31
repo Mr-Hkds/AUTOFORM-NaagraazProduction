@@ -166,16 +166,26 @@ const parseGoogleJson = (data: any, fallbackTitle: string = ''): { title: string
   const rawQuestions = data[1][1];
 
   const questions: FormQuestion[] = [];
+  let currentPageIndex = 0;
 
   if (!Array.isArray(rawQuestions)) {
     return { title: formTitle, questions: [] };
   }
 
   rawQuestions.forEach((q: any) => {
-    if (!q || !q[1]) return; // Skip invalid entries
+    if (!q) return;
 
-    const title = q[1].trim();
     const typeId = q[3];
+
+    // Detect Page Break / Section Header (Type 8)
+    if (typeId === 8) {
+      currentPageIndex++;
+      console.log(`[FormParser] Detected Page Break. Switching to Page ${currentPageIndex}`);
+      return;
+    }
+
+    if (!q[1]) return; // Skip invalid entries (like images/videos without titles)
+
     let type = GOOGLE_TYPE_MAP[typeId] || QuestionType.UNKNOWN;
 
     // Fallback/Correction for specific types if map fails
@@ -187,55 +197,51 @@ const parseGoogleJson = (data: any, fallbackTitle: string = ''): { title: string
       else if (typeId === 5) type = QuestionType.LINEAR_SCALE;
     }
 
+    const title = q[1].trim();
     const required = q[4] && q[4][0] && q[4][0][2] === 1;
 
     let options: { value: string }[] = [];
 
     // Robust Options Extraction
-    // Options can be in q[4] directly, or nested in q[4][0], or q[4][0][1] depending on version/type
     let rawOptions = [];
 
-    // Path 1: Direct (Gold Standard for most types) -> [[text, ...], ...]
     if (Array.isArray(q[4]) && q[4].length > 0 && Array.isArray(q[4][0]) && typeof q[4][0][0] === 'string') {
       rawOptions = q[4];
     }
-    // Path 2: Nested Container -> [ [[text, ...], ...], otherData ]
     else if (Array.isArray(q[4]) && q[4].length > 0 && Array.isArray(q[4][0]) && Array.isArray(q[4][0][0])) {
       rawOptions = q[4][0];
     }
-    // Path 3: Deep Nested (Older logic) -> [ [id, [[text, ...], ...], ...], ... ]
     else if (Array.isArray(q[4]) && q[4].length > 0 && q[4][0] && Array.isArray(q[4][0][1])) {
       rawOptions = q[4][0][1];
     }
 
-    // Checkboxes/Grid specific fix: sometimes in q[4][0][1] even if Path 2 matched partially? 
-    // Let's stick to the found rawOptions if valid.
-
     if (rawOptions && Array.isArray(rawOptions)) {
       rawOptions.forEach((opt: any) => {
-        // opt[0] is the option text
         if (opt && typeof opt[0] === 'string' && opt[0] !== "") {
           options.push({ value: opt[0] });
         }
       });
     }
 
-    // Special handling for linear scale
     if (type === QuestionType.LINEAR_SCALE && q[4] && q[4].length > 0) {
-      // Linear scale options usually come in a different structure or just labels
-      // Often defined by min/max in other fields, but sometimes labels are in q[4]
-      // If we didn't find standard options, let's generate 1-5 or 1-10 based on typical scale
-      // For MVP, if empty, default to 1-5
       if (options.length === 0) {
-        const min = q[4][0][0] || "1"; // often in q[4][0][1] ? complex.
-        // Simplification: just 1-5 for now if extraction fails
         options = ['1', '2', '3', '4', '5'].map(v => ({ value: v }));
       }
     }
 
-    const entryId = q[4] && q[4][0] && q[4][0][0] ? q[4][0][0].toString() : q[0].toString();
+    // Robust Entry ID Extraction
+    let entryId = "";
+    try {
+      if (q[4] && q[4][0] && q[4][0][0]) {
+        entryId = q[4][0][0].toString();
+      } else {
+        entryId = q[0].toString();
+      }
+    } catch (e) {
+      entryId = q[0].toString();
+    }
 
-    console.log(`Parsed Question: "${title}" [${type}] entryId: ${entryId} Options: ${options.length}`);
+    console.log(`Parsed Question: "${title}" [${type}] entryId: ${entryId} Options: ${options.length} Page: ${currentPageIndex}`);
 
     questions.push({
       id: q[0].toString(),
@@ -243,11 +249,12 @@ const parseGoogleJson = (data: any, fallbackTitle: string = ''): { title: string
       title,
       type,
       options,
-      required: !!required
+      required: !!required,
+      pageIndex: currentPageIndex
     });
   });
 
-  // --- AUTOMATIC EMAIL COLLECTION DETECTION (The "Record email" checkbox) ---
+  // --- AUTOMATIC EMAIL COLLECTION DETECTION ---
   const emailCollectionMode = data[1][10] || data[1][24];
   if (emailCollectionMode > 0 && !questions.some(q => q.entryId === 'emailAddress')) {
     questions.unshift({
@@ -256,7 +263,8 @@ const parseGoogleJson = (data: any, fallbackTitle: string = ''): { title: string
       title: "Email Address (Verified Collection Enabled)",
       type: QuestionType.SHORT_ANSWER,
       options: [],
-      required: true
+      required: true,
+      pageIndex: 0 // Email collection is always on page 1 (index 0)
     });
   }
 

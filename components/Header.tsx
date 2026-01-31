@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, o
                             AutoForm <span className="text-emerald-500">.AI</span>
                         </span>
                         <span className="text-[8px] text-slate-500 font-mono uppercase tracking-[0.2em] hidden sm:block">
-                            Neural <span className="text-amber-500/80">Automation</span> Suite
+                            A <span className="text-amber-500/80">TRIKALA</span> PRODUCTION
                         </span>
                     </div>
                 </div>
