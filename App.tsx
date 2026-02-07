@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 // Log Version for Vercel Verification
 console.log('[SYSTEM] AutoForm AI v4.1.4 Loaded [Razorpay Fixes Included]');
-import { Bot, Copy, CheckCircle, AlertCircle, BarChart3, ArrowRight, ArrowLeft, RotateCcw, Sparkles, Code2, Terminal, Zap, Command, Activity, Cpu, Crown, LogOut, Settings, Lock, Laptop, Monitor, Target, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Bot, Copy, CheckCircle, AlertCircle, BarChart3, ArrowRight, ArrowLeft, RotateCcw, Sparkles, Code2, Terminal, Zap, Command, Activity, Cpu, Crown, LogOut, Settings, Lock, Laptop, Monitor, Target, ShieldCheck, ExternalLink, Rocket } from 'lucide-react';
 import { fetchAndParseForm } from './services/formParser';
 import { analyzeForm as analyzeFormWithStatistics, generateResponseSuggestions } from './services/analysisService';
 import { generateAutomationScript } from './utils/scriptTemplate';
@@ -16,14 +16,12 @@ import { FormAnalysis, User } from './types';
 import PaymentModal from './components/PaymentModal';
 import LoadingScreen from './components/LoadingScreen';
 import AdminDashboard from './pages/AdminDashboard';
-import TransitionOverlay from './components/TransitionOverlay';
 import HeroSection from './components/HeroSection';
 import VideoModal from './components/VideoModal';
 import MissionControl from './components/MissionControl';
 import Header from './components/Header';
 import PremiumBackground from './components/PremiumBackground';
 import LegalPage from './components/LegalPage';
-import MatrixReveal from './components/MatrixReveal'; // Imported MatrixReveal
 
 // --- VISUAL COMPONENTS ---
 
@@ -62,7 +60,7 @@ const LoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: () => 
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-fade-in-up">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
             <div className="max-w-md w-full glass-panel p-8 rounded-2xl border border-white/5 shadow-2xl relative z-10">
                 <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition">✕</button>
@@ -103,7 +101,7 @@ const LoginModal = ({ onClose, onLogin }: { onClose: () => void, onLogin: () => 
 };
 
 const RecommendationModal = ({ onClose, onSelect }: { onClose: () => void, onSelect: (val: number) => void }) => (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-fade-in">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
         <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
         <div className="max-w-md w-full glass-panel p-8 rounded-2xl border border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.1)] relative z-10">
             <div className="flex flex-col items-center text-center space-y-6">
@@ -147,6 +145,84 @@ const RecommendationModal = ({ onClose, onSelect }: { onClose: () => void, onSel
     </div>
 );
 
+// --- TagInput Component for Multi-Value Text Fields ---
+const TagInput = ({ value, onChange, placeholder, isParagraph = false }: { value: string, onChange: (val: string) => void, placeholder: string, isParagraph?: boolean }) => {
+    const [inputValue, setInputValue] = useState('');
+    const tags = value ? value.split(',').map(t => t.trim()).filter(t => t !== '') : [];
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            if (e.key === 'Enter' && isParagraph && e.shiftKey) return; // Allow shift+enter for genuine newlines in draft? (Tricky without real textarea)
+
+            e.preventDefault();
+            const tag = inputValue.trim();
+            if (tag && !tags.includes(tag)) {
+                onChange(value ? `${value}, ${tag}` : tag);
+            }
+            setInputValue('');
+        } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
+            const newTags = [...tags];
+            newTags.pop();
+            onChange(newTags.join(', '));
+        }
+    };
+
+    const removeTag = (index: number) => {
+        const newTags = tags.filter((_, i) => i !== index);
+        onChange(newTags.join(', '));
+    };
+
+    return (
+        <div className={`flex flex-wrap gap-2 p-3 bg-black/40 border border-white/10 rounded-xl transition-all shadow-inner group/taginput ${isParagraph ? 'min-h-[120px] focus-within:border-emerald-500/50' : 'min-h-[56px] focus-within:border-amber-500/50'}`}>
+            {tags.map((tag, i) => (
+                <div key={i} className={`flex items-center gap-2 px-2.5 py-1.5 border rounded-lg text-[10px] font-bold animate-fade-in group/tag ${isParagraph ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 w-full' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                    <span className={`${isParagraph ? '' : 'max-w-[150px] truncate'}`}>{tag}</span>
+                    <button
+                        onClick={() => removeTag(i)}
+                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-all shrink-0 ${isParagraph ? 'hover:bg-emerald-500/20 text-emerald-500/50' : 'hover:bg-amber-500/20 text-amber-500/50'}`}
+                    >
+                        ✕
+                    </button>
+                </div>
+            ))}
+            {isParagraph ? (
+                <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            handleKeyDown(e as any);
+                        }
+                    }}
+                    placeholder={tags.length === 0 ? placeholder : 'Add another variant...'}
+                    className="w-full bg-transparent border-none outline-none text-[11px] text-white font-mono px-2 py-1 min-h-[40px] placeholder:text-slate-600 resize-none"
+                />
+            ) : (
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={tags.length === 0 ? placeholder : ''}
+                    className="flex-1 bg-transparent border-none outline-none text-[11px] text-white font-mono px-2 min-w-[150px] placeholder:text-slate-600"
+                />
+            )}
+
+            <div className="w-full flex justify-between items-center mt-auto pt-2 border-t border-white/5">
+                <div className="flex items-center gap-1.5 text-[9px] text-slate-600 font-bold uppercase tracking-widest">
+                    <Command className="w-3 h-3" />
+                    {tags.length} Response {tags.length === 1 ? 'Variant' : 'Variants'}
+                </div>
+                {isParagraph && (
+                    <div className="text-[8px] text-slate-700 font-mono uppercase tracking-tighter">
+                        Press Enter to add variant • Shift+Enter for newline
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // --- APP COMPONENTS ---
 
 
@@ -159,18 +235,18 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
                 <div className="relative">
                     <div className="absolute -inset-4 bg-amber-500/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                     <div className="flex items-center gap-3 relative z-10">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse" />
-                        <span className="text-xs text-slate-300 font-sans tracking-[0.3em] font-bold uppercase transition-colors group-hover:text-white">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                        <span className="text-xs text-slate-300 font-sans tracking-[0.3em] font-bold uppercase group-hover:text-white">
                             AutoForm . AI
                         </span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                     </div>
                 </div>
 
-                <div className="h-px w-12 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-amber-500/50 transition-all duration-700" />
+                <div className="h-px w-12 bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-amber-500/50" />
 
                 <span className="text-xs md:text-sm text-amber-500/90 font-serif italic tracking-widest hover:text-amber-400 transition-colors">
-                    A Trikala Production
+                    A Bharamratri Production
                 </span>
             </div>
 
@@ -216,7 +292,7 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
                             <strong className="text-amber-500/90 block mb-2 tracking-widest uppercase text-[9px]">Operational Directive // Educational Use Only</strong>
                             The AutoForm Automation Suite is strictly engineered for <span className="text-slate-200">statistical analysis and educational research</span> purposes.
                             The deployment of this technology implies full user consent and responsibility for compliance with all relevant Terms of Service and legal frameworks.
-                            Trikala Productions assumes no liability for the operational misuse or unauthorized application of this system.
+                            Bharamratri Productions assumes no liability for the operational misuse or unauthorized application of this system.
                         </div>
                     </div>
                 </div>
@@ -229,13 +305,12 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
                 </p>
                 <div className="group relative cursor-pointer">
                     {/* Liquid Gold Glow */}
-                    <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="absolute -inset-8 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 blur-2xl opacity-0 group-hover:opacity-100" />
 
                     {/* Signature Text */}
-                    <MatrixReveal
-                        text="MR. HARKAMAL"
-                        className="relative z-10 text-lg md:text-xl font-bold liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
-                    />
+                    <span className="relative z-10 text-lg md:text-xl font-bold liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                        MR. HARKAMAL
+                    </span>
                 </div>
             </div>
 
@@ -281,6 +356,8 @@ function App() {
     const [delayMin, setDelayMin] = useState(500);
     const [nameSource, setNameSource] = useState<'auto' | 'indian' | 'custom'>('auto');
     const [customNamesRaw, setCustomNamesRaw] = useState('');
+    const [speedMode, setSpeedMode] = useState<'auto' | 'manual'>('auto');
+    const [isLaunching, setIsLaunching] = useState(false);
 
     // NEW: AI Data Context State
     const [aiPromptData, setAiPromptData] = useState('');
@@ -289,7 +366,6 @@ function App() {
     const [copied, setCopied] = useState(false);
     const [currentToken, setCurrentToken] = useState<TokenMetadata | null>(null);
     const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [questionSearch, setQuestionSearch] = useState('');
 
@@ -426,6 +502,20 @@ function App() {
         setUrl('');
         setShowAdminDashboard(false);
     };
+
+    // Auto-calculate speed based on mission scale
+    useEffect(() => {
+        if (speedMode === 'auto' && analysis) {
+            const totalOps = analysis.questions.length * targetCount;
+            let bestDelay = 500; // Rapid (Safe) - previously 1000ms
+
+            if (totalOps > 200) bestDelay = 0; // Warp Drive
+            else if (totalOps > 100) bestDelay = 50; // Intensive (Turbo)
+            else if (totalOps > 20) bestDelay = 200; // Balanced (Agile)
+
+            setDelayMin(bestDelay);
+        }
+    }, [speedMode, targetCount, analysis?.questions.length]);
 
     const checkBalanceAndRedirect = (val: number) => {
         if (user && val > (user.tokens || 0)) {
@@ -847,7 +937,10 @@ function App() {
                 if ((window as any).__AF_STOP_SIGNAL) break;
 
                 pushLog(`Response #${i + 1}: Simulating human reasoning...`);
-                await smartDelay(1500 + Math.random() * 2000); // Thinking delay
+                // Use adaptive delay based on user selection
+                const baseDelay = delayMin;
+                const jitter = delayMin === 0 ? 0 : Math.floor(Math.random() * 1000);
+                await smartDelay(baseDelay + jitter);
 
                 pushLog(`Response #${i + 1}: Generating optimized payload...`);
 
@@ -946,9 +1039,10 @@ function App() {
                     pushLog(`IP SAFETY: Automatic cooldown triggered. Waiting ${cooldownSecs}s to prevent blocking...`, 'COOLDOWN');
                     await smartDelay(cooldownSecs * 1000);
                 } else {
-                    // Natural Human-scale Jitter/Delay
-                    const jitter = Math.floor(Math.random() * 4000) + 2000;
-                    await smartDelay(jitter);
+                    // Optimized gap between requests
+                    const gapDelay = delayMin === 0 ? 0 : Math.max(500, delayMin);
+                    const jitter = delayMin === 0 ? 0 : Math.floor(Math.random() * 2000);
+                    await smartDelay(gapDelay + jitter);
                 }
             }
 
@@ -1051,19 +1145,27 @@ function App() {
 
         setAutomationLogs([]);
 
-        // --- OPTIMIZED TRANSITION FLOW ---
-        setIsTransitioning(true);
+        // --- ATMOSPHERIC VERIFICATION SEQUENCE (3000ms) ---
+        setIsLaunching(true);
+
+        // Sequence: 
+        // 0-2200ms: Neural Handshake & Calibration
+        // 2200ms: Glow Blade Swipe Starts
+        // 2600ms: Page Swap (Behind the Blade)
+        // 3000ms: Transition End
+
+        setTimeout(() => {
+            setStep(3);
+        }, 2600);
 
         setTimeout(async () => {
-            setStep(3);
-            setIsTransitioning(false);
-
+            setIsLaunching(false);
             try {
                 await handleAutoRun(mergedResponses);
             } catch (err) {
                 console.error("Auto-Run failed", err);
             }
-        }, 1200);
+        }, 3000);
     };
 
     const handleAIInject = () => {
@@ -1123,7 +1225,6 @@ function App() {
         <div className="min-h-screen flex flex-col pt-16 relative overflow-hidden">
             {showLogin && <LoginModal onClose={() => setShowLogin(false)} onLogin={handleLogin} />}
             {showPricing && user && <PaymentModal onClose={() => setShowPricing(false)} user={user} />}
-            {isTransitioning && <TransitionOverlay />}
             <VideoModal isOpen={showVideoModal} onClose={() => setShowVideoModal(false)} />
             {showRecommendationModal && (
                 <RecommendationModal
@@ -1138,6 +1239,135 @@ function App() {
             <PremiumBackground />
 
             {/* Floating Header */}
+
+            {/* Premium Atmospheric Verification Sequence */}
+            {isLaunching && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+                    <style>{`
+                        @keyframes core-inhale {
+                            0% { opacity: 0; scale: 0.8; filter: blur(20px); }
+                            100% { opacity: 1; scale: 1; filter: blur(0px); }
+                        }
+                        @keyframes scan-line {
+                            0% { transform: translateY(-100%); opacity: 0; }
+                            50% { opacity: 0.5; }
+                            100% { transform: translateY(100%); opacity: 0; }
+                        }
+                        @keyframes deep-space-pulse {
+                            0% { opacity: 0.3; transform: scale(1); }
+                            50% { opacity: 0.6; transform: scale(1.1); }
+                            100% { opacity: 0.3; transform: scale(1); }
+                        }
+                        @keyframes liquid-wave-pan {
+                            0% { transform: translateX(-100%); opacity: 0; }
+                            50% { opacity: 1; }
+                            100% { transform: translateX(100%); opacity: 0; }
+                        }
+                        @keyframes stardust-float {
+                            0% { transform: translateY(0px); opacity: 0; }
+                            50% { opacity: 0.8; }
+                            100% { transform: translateY(-20px); opacity: 0; }
+                        }
+                        .atmospheric-overlay {
+                            position: absolute;
+                            inset: 0;
+                            background: #000000;
+                            z-index: 0;
+                        }
+                        .deep-bloom {
+                            position: absolute;
+                            inset: 0;
+                            background: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+                            animation: deep-space-pulse 4s ease-in-out infinite;
+                            z-index: 10;
+                        }
+                        .fluid-wave {
+                            position: absolute;
+                            inset: 0;
+                            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.5), rgba(255, 255, 255, 0.1), transparent);
+                            filter: blur(40px);
+                            animation: liquid-wave-pan 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                            z-index: 20;
+                            pointer-events: none;
+                        }
+                        .stardust-1 { top: 20%; left: 30%; animation: stardust-float 3s ease-in-out infinite; animation-delay: 0.2s; }
+                        .stardust-2 { top: 60%; left: 70%; animation: stardust-float 4s ease-in-out infinite; animation-delay: 0.5s; }
+                        .stardust-3 { top: 40%; left: 80%; animation: stardust-float 3.5s ease-in-out infinite; animation-delay: 1.2s; }
+                        .stardust-4 { top: 80%; left: 20%; animation: stardust-float 4.5s ease-in-out infinite; animation-delay: 0.8s; }
+                    `}</style>
+
+                    {/* Background Elements */}
+                    <div className="atmospheric-overlay" />
+                    <div className="deep-bloom" />
+                    <div className="fluid-wave" />
+
+                    {/* Stardust Particles */}
+                    <div className="absolute w-1 h-1 bg-white rounded-full opacity-0 stardust-1 z-30" />
+                    <div className="absolute w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-0 stardust-2 z-30" />
+                    <div className="absolute w-1 h-1 bg-white rounded-full opacity-0 stardust-3 z-30" />
+                    <div className="absolute w-1 h-1 bg-emerald-500/50 rounded-full opacity-0 stardust-4 z-30" />
+
+                    {/* HOLOGRAPHIC HUD CARD */}
+                    <div className="relative z-10 w-full max-w-md bg-black/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md animate-[core-inhale_0.8s_ease-out_forwards]">
+                        {/* Scanline Texture */}
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px] opacity-20 pointer-events-none" />
+                        <div className="absolute inset-0 bg-emerald-500/5 animate-pulse" />
+
+                        <div className="p-8 flex flex-col items-center text-center relative z-20">
+                            {/* Central Neural Icon */}
+                            <div className="relative mb-8">
+                                <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-150 animate-pulse" />
+                                <div className="relative bg-black border border-emerald-500/30 p-6 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                                    <Zap className="w-10 h-10 text-emerald-400" />
+                                </div>
+                                <div className="absolute inset-[-10px] border border-emerald-500/10 rounded-xl animate-spin [animation-duration:10s]" />
+                            </div>
+
+                            {/* Status Messages */}
+                            <div className="space-y-2 w-full">
+                                <h3 className="text-xl font-mono font-bold text-white tracking-widest uppercase mb-1">
+                                    System Integ.
+                                </h3>
+                                <div className="h-6 flex items-center justify-center bg-black/30 w-full rounded border border-white/5">
+                                    <span className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase animate-pulse">
+                                        {progress < 30 ? "Verifying Response Vectors..." :
+                                            progress < 70 ? "Syncing Neural Core..." :
+                                                "Bypassing Security Protocol..."}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Visual Progress Bar */}
+                            <div className="mt-8 w-full">
+                                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-1 uppercase tracking-widest">
+                                    <span>Calibration</span>
+                                    <span>{Math.round((Math.min(3000, 3000) / 3000) * 100)}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                                    <div className="h-full bg-emerald-500 rounded-full animate-[progress-run_2.8s_ease-out_forwards] shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card Footer Detail */}
+                        <div className="h-1 w-full bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50" />
+                    </div>
+
+                    <style>{`
+                        @keyframes progress-run {
+                            0% { width: 0%; }
+                            100% { width: 100%; }
+                        }
+                        @keyframes fade-in {
+                            0% { opacity: 0; transform: translateY(5px); }
+                            10% { opacity: 1; transform: translateY(0); }
+                            90% { opacity: 1; transform: translateY(0); }
+                            100% { opacity: 0; transform: translateY(-5px); }
+                        }
+                    `}</style>
+                </div>
+            )}
+
             <Header
                 reset={reset}
                 step={step}
@@ -1179,6 +1409,43 @@ function App() {
                                 {/* STEP 2: DASHBOARD */}
                                 {step === 2 && analysis && (
                                     <section className="w-full animate-fade-in-up">
+                                        {/* Progress Indicator */}
+                                        <div className="mb-6 flex items-center justify-center gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
+                                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                                </div>
+                                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Analyzed</span>
+                                            </div>
+                                            <div className="w-12 h-0.5 bg-gradient-to-r from-emerald-500 to-amber-500" />
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-amber-500 border-2 border-amber-400 flex items-center justify-center animate-pulse">
+                                                    <span className="text-xs font-black text-white">2</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Configure</span>
+                                            </div>
+                                            <div className="w-12 h-0.5 bg-white/10" />
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-white/5 border-2 border-white/20 flex items-center justify-center">
+                                                    <span className="text-xs font-black text-white/40">3</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Launch</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Instruction Banner */}
+                                        <div className="mb-6 glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-500/10 to-transparent animate-fade-in-up">
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-emerald-500/20 p-2 rounded-lg">
+                                                    <ArrowRight className="w-5 h-5 text-emerald-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-sm font-bold text-white mb-1 uppercase tracking-wide">Ready for Launch?</h3>
+                                                    <p className="text-xs text-slate-300 leading-relaxed">Review your settings below, then click the vibrant <span className="text-emerald-400 font-semibold">"Launch Mission"</span> button to begin.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-8">
                                             <div>
                                                 <h2 className="text-3xl font-serif font-bold text-white mb-2 tracking-tight">{analysis.title}</h2>
@@ -1201,46 +1468,44 @@ function App() {
                                                     <button onClick={reset} className="glass-panel px-6 py-3 rounded-lg text-slate-400 text-sm hover:text-white transition">
                                                         Cancel
                                                     </button>
-                                                    <div className="group relative">
-                                                        <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 opacity-30 group-hover:opacity-75 blur-md transition-opacity duration-500" />
+                                                    <div className="relative">
+                                                        {/* Halo Pulse for Premium Visibility */}
+                                                        <div className="absolute -inset-2 bg-emerald-500/10 rounded-2xl blur-xl animate-pulse group-hover:bg-emerald-500/20 transition-colors" />
                                                         <button
                                                             onClick={handleCompile}
-                                                            className="relative flex items-center gap-5 px-8 py-4 bg-slate-950 rounded-xl border border-amber-500/30 group-hover:border-amber-400/80 transition-all duration-300 overflow-hidden shadow-2xl w-full"
+                                                            disabled={isLaunching}
+                                                            className={`relative group flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-emerald-500/90 to-teal-600/90 rounded-xl shadow-lg border border-emerald-400/20 transition-all duration-200 ${isLaunching ? 'scale-95 brightness-75' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
                                                         >
-                                                            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-black opacity-90" />
-                                                            <div className="absolute inset-y-0 left-0 w-1 bg-amber-500/50 group-hover:bg-amber-400 transition-colors" />
+                                                            {/* Premium "Bloom" Radial Glow */}
+                                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
 
-                                                            {/* Symbol Box */}
-                                                            <div className="relative flex-shrink-0 w-12 h-12 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 group-hover:bg-amber-500/20 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                                                                <Zap className="w-6 h-6 text-amber-500 group-hover:text-amber-200 transition-colors" />
+                                                            {/* Status Indicator */}
+                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-black/20 rounded-md border border-white/10">
+                                                                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                                                                <span className="text-[9px] font-bold text-white uppercase tracking-wider">Ready</span>
                                                             </div>
 
-                                                            {/* Typography */}
-                                                            <div className="text-left relative z-10 flex flex-col justify-center">
-                                                                <div className="flex items-center gap-2 mb-0.5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_5px_#10b981]" />
-                                                                    <span className="text-[9px] font-mono text-emerald-400/90 tracking-widest uppercase">
-                                                                        System Ready
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-sm font-bold text-white tracking-[0.15em] uppercase font-sans group-hover:text-amber-100 transition-colors whitespace-nowrap">
-                                                                    Initiate Launch
-                                                                </div>
+                                                            {/* Icon */}
+                                                            <div className="bg-black/15 p-2 rounded-lg group-hover:bg-black/25 transition-colors">
+                                                                <Zap className="w-5 h-5 text-white" />
                                                             </div>
 
-                                                            {/* Continuous Shimmer */}
-                                                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-12" />
+                                                            {/* Label */}
+                                                            <div className="flex flex-col items-start flex-1">
+                                                                <span className="text-[10px] font-semibold text-emerald-100/70 uppercase tracking-wide">Ready to Start</span>
+                                                                <span className="text-base font-bold text-white uppercase tracking-wide">Launch Mission</span>
+                                                            </div>
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest opacity-70">
-                                                    Finalize configuration then launch process
+                                                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-70">
+                                                    Click to start the automated process
                                                 </span>
                                             </div>
                                         </div>
 
                                         {error && (
-                                            <div className="mb-6 flex items-center gap-3 text-red-200 bg-red-950/80 border border-red-500/30 px-6 py-4 rounded-xl text-sm font-medium backdrop-blur-xl shadow-xl animate-fade-in-up">
+                                            <div className="mb-6 flex items-center gap-3 text-red-200 bg-red-950/80 border border-red-500/30 px-6 py-4 rounded-xl text-sm font-medium backdrop-blur-xl shadow-xl">
                                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                                                 <span className="flex-1">{error}</span>
                                             </div>
@@ -1349,62 +1614,71 @@ function App() {
                                                     </div>
                                                 </div>
 
-                                                <div className="glass-panel p-6 rounded-xl space-y-4">
-                                                    <div className="flex justify-between items-center text-xs font-bold text-white uppercase tracking-widest">
-                                                        <div className="flex items-center gap-2">
-                                                            <Zap className="w-4 h-4 text-amber-500" /> Interaction Speed
-                                                        </div>
+                                                <div className="flex justify-between items-center text-xs font-bold text-white uppercase tracking-widest">
+                                                    <div className="flex items-center gap-2">
+                                                        <Zap className="w-4 h-4 text-amber-500" /> Interaction Speed
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {speedMode === 'auto' && (
+                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">
+                                                                AUTO-OPTIMIZED
+                                                            </span>
+                                                        )}
                                                         <span className={`font-mono ${delayMin === 0 ? 'text-fuchsia-400' : delayMin <= 100 ? 'text-red-400' : delayMin <= 500 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                                            {delayMin === 1500 ? 'Slow' : delayMin === 500 ? 'Fast' : delayMin === 100 ? 'Fastest' : 'Superfast'} ({delayMin}ms)
+                                                            {delayMin === 0 ? 'Warp' : delayMin === 100 ? 'Intensive' : delayMin === 500 ? 'Efficient' : 'Realistic'} ({delayMin}ms)
                                                         </span>
                                                     </div>
-
-                                                    <div className="grid grid-cols-4 gap-2">
-                                                        {[
-                                                            { id: 'slow', label: 'Slow', val: 1500, desc: 'Safe', color: 'emerald' },
-                                                            { id: 'fast', label: 'Fast', val: 500, desc: 'Auto', color: 'amber' },
-                                                            { id: 'fastest', label: 'Fastest', val: 100, desc: 'Extreme', color: 'red' },
-                                                            { id: 'superfast', label: 'Super', val: 0, desc: '0 Latency', color: 'fuchsia' }
-                                                        ].map((speed) => (
-                                                            <button
-                                                                key={speed.id}
-                                                                onClick={() => setDelayMin(speed.val)}
-                                                                className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 ${delayMin === speed.val
-                                                                    ? `bg-${speed.color}-500/20 border-${speed.color}-500 text-white shadow-lg`
-                                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
-                                                                    }`}
-                                                            >
-                                                                <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">{speed.label}</span>
-                                                                <span className="text-[7px] opacity-60 text-center leading-tight">{speed.desc}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-
-                                                    {delayMin === 0 && (
-                                                        <div className="p-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-[9px] text-fuchsia-200/80 leading-relaxed font-mono animate-pulse">
-                                                            <span className="text-fuchsia-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
-                                                                <Zap className="w-3 h-3" /> Warp Drive Engaged
-                                                            </span>
-                                                            Zero latency mode. Requests execute instantly. Ensure database can handle rapid concurrent writes.
-                                                        </div>
-                                                    )}
-                                                    {delayMin === 100 && (
-                                                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-[9px] text-red-200/80 leading-relaxed font-mono animate-pulse">
-                                                            <span className="text-red-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
-                                                                <AlertCircle className="w-3 h-3" /> System Warning
-                                                            </span>
-                                                            Fastest mode bypasses human-simulation protocols. Higher risk of detection by strict anti-bot systems.
-                                                        </div>
-                                                    )}
-                                                    {delayMin === 500 && (
-                                                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[9px] text-amber-200/80 leading-relaxed font-mono">
-                                                            <span className="text-amber-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
-                                                                <Sparkles className="w-3 h-3" /> Optimization Tip
-                                                            </span>
-                                                            Fast mode is balanced for speed and organic simulation. Recommended for most projects.
-                                                        </div>
-                                                    )}
                                                 </div>
+
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <button
+                                                        onClick={() => setSpeedMode('auto')}
+                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 col-span-1 ${speedMode === 'auto'
+                                                            ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-lg'
+                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
+                                                            }`}
+                                                    >
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Best Choice</span>
+                                                        <span className="text-[7px] opacity-60 text-center leading-tight">Recommended</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setSpeedMode('manual'); setDelayMin(1000); }}
+                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 ${speedMode === 'manual' && delayMin >= 1000
+                                                            ? 'bg-amber-500/20 border-amber-500 text-white shadow-lg'
+                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
+                                                            }`}
+                                                    >
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Steady</span>
+                                                        <span className="text-[7px] opacity-60 text-center leading-tight">Human-Like</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setSpeedMode('manual'); setDelayMin(0); }}
+                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 ${speedMode === 'manual' && delayMin === 0
+                                                            ? 'bg-fuchsia-500/20 border-fuchsia-500 text-white shadow-lg'
+                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
+                                                            }`}
+                                                    >
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Warp Drive</span>
+                                                        <span className="text-[7px] opacity-60 text-center leading-tight">0 Latency</span>
+                                                    </button>
+                                                </div>
+
+                                                {delayMin === 0 && (
+                                                    <div className="p-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-[9px] text-fuchsia-200/80 leading-relaxed font-mono animate-pulse">
+                                                        <span className="text-fuchsia-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
+                                                            <Zap className="w-3 h-3" /> Warp Drive Engaged
+                                                        </span>
+                                                        Minimal latency. Requests execute as fast as the system allows. Higher detection risk.
+                                                    </div>
+                                                )}
+                                                {speedMode === 'auto' && (
+                                                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-200/80 leading-relaxed font-mono">
+                                                        <span className="text-emerald-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
+                                                            <Sparkles className="w-3 h-3" /> Smart Balancing
+                                                        </span>
+                                                        Speed automatically adjusted to {delayMin === 0 ? 'maximum' : delayMin === 100 ? 'intensive' : delayMin === 500 ? 'balanced' : 'organic'} based on project scale.
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Right Col: Operations */}
@@ -1441,11 +1715,10 @@ function App() {
                                                         </div>
 
                                                         {nameSource === 'custom' && (
-                                                            <textarea
+                                                            <TagInput
                                                                 value={customNamesRaw}
-                                                                onChange={(e) => setCustomNamesRaw(e.target.value)}
-                                                                placeholder="Enter names separated by commas..."
-                                                                className="w-full bg-[#050505] border border-white/10 rounded-xl p-4 text-xs text-white font-mono h-24 focus:border-amber-500/50 outline-none shadow-inner"
+                                                                onChange={(val) => setCustomNamesRaw(val)}
+                                                                placeholder="Enter names and press Enter or Comma..."
                                                             />
                                                         )}
                                                     </div>
@@ -1645,7 +1918,35 @@ function App() {
                                                                         </div>
 
                                                                         <div className="space-y-4">
-                                                                            {q.options.slice(0, 10).map((opt, oIdx) => (
+                                                                            {/* Text Fields: Manual Tag Input */}
+                                                                            {(q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH') && (
+                                                                                <div className="space-y-3">
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Manual Response Pool</span>
+                                                                                            <span className="text-[8px] text-slate-600 italic font-mono">Variants for: {q.title}</span>
+                                                                                        </div>
+                                                                                        <div className={`flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded border ${q.type === 'PARAGRAPH' ? 'text-emerald-500/80 bg-emerald-500/5 border-emerald-500/10' : 'text-amber-500/80 bg-amber-500/5 border-amber-500/10'}`}>
+                                                                                            <span className={`w-1 h-1 rounded-full animate-pulse ${q.type === 'PARAGRAPH' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                                                                            {q.type === 'PARAGRAPH' ? 'LONG FORM' : 'SMART CHIPS'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <TagInput
+                                                                                        value={customResponses[q.id] || ''}
+                                                                                        onChange={(val) => setCustomResponses(prev => ({ ...prev, [q.id]: val }))}
+                                                                                        placeholder={q.type === 'PARAGRAPH' ? "Provide a sample paragraph..." : "Enter a response..."}
+                                                                                        isParagraph={q.type === 'PARAGRAPH'}
+                                                                                    />
+                                                                                    <p className="text-[9px] text-slate-500 italic opacity-60">
+                                                                                        {q.type === 'PARAGRAPH'
+                                                                                            ? "Generate rich, varied paragraphs. Use multiple variants to avoid detection."
+                                                                                            : "Add multiple unique responses. The AI will rotate through them to avoid duplicates."}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Option Based Fields: Sliders */}
+                                                                            {q.options.length > 0 && q.options.slice(0, 10).map((opt, oIdx) => (
                                                                                 <div key={oIdx} className="space-y-1.5">
                                                                                     {/* Option name and percentage */}
                                                                                     <div className="flex items-center justify-between text-[11px]">

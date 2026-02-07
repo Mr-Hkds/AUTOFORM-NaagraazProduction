@@ -187,7 +187,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, user }) => {
                             href="mailto:naagraazproduction@gmail.com"
                             className="text-sm text-amber-400 hover:text-amber-300 font-mono transition-colors"
                         >
-                            naagraazproduction@gmail.com
+                            bharamratriproduction@gmail.com
                         </a>
                     </div>
                     <button onClick={onClose} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold h-12 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]">

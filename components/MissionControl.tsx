@@ -20,6 +20,33 @@ interface MissionControlProps {
     onTokenUpdate?: (val: number) => void;
 }
 
+const NumericRoll: React.FC<{ value: number | string | null, duration?: number }> = ({ value, duration = 600 }) => {
+    const [displayValue, setDisplayValue] = useState<number>(0);
+    const target = typeof value === 'number' ? value : parseFloat(String(value));
+
+    useEffect(() => {
+        if (isNaN(target)) return;
+        let start = 0;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const now = Date.now();
+            const progress = Math.min((now - startTime) / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = Math.floor(start + (target * easeOut));
+
+            setDisplayValue(current);
+            if (progress < 1) requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
+    }, [target, duration]);
+
+    if (typeof value === 'string' && value.includes('.')) {
+        return <span>{displayValue.toFixed(1)}</span>;
+    }
+    return <span>{displayValue}</span>;
+};
+
 const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, initialTokens, onAbort, onBackToConfig, onNewMission, formTitle, onShowPricing, onTokenUpdate }) => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [tokenPhase, setTokenPhase] = useState<'IDLE' | 'REDUCING' | 'DONE'>('IDLE');
@@ -129,17 +156,45 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
     return (
         <div
             ref={containerRef}
-            className="w-full max-w-5xl mx-auto space-y-8 animate-fade-in-up relative scroll-mt-20"
+            className="w-full max-w-5xl mx-auto space-y-8 relative scroll-mt-20"
         >
+            <style>{`
+                @keyframes digital-inhale {
+                    0% { 
+                        opacity: 0; 
+                        filter: blur(10px) brightness(1.5);
+                        transform: scale(0.95) translateY(20px);
+                    }
+                    100% { 
+                        opacity: 1; 
+                        filter: blur(0px) brightness(1);
+                        transform: scale(1) translateY(0);
+                    }
+                }
+                @keyframes spectral-glitch {
+                    0% { text-shadow: 2px 0 #10b981, -2px 0 #fbbf24; opacity: 0; }
+                    25% { text-shadow: -2px 0 #10b981, 2px 0 #3b82f6; opacity: 0.5; }
+                    50% { text-shadow: 1px 0 #f59e0b, -1px 0 #10b981; opacity: 0.8; }
+                    100% { text-shadow: 0 0 transparent; opacity: 1; }
+                }
+                .inhale-1 { animation: digital-inhale 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+                .inhale-2 { animation: digital-inhale 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s forwards; opacity: 0; }
+                .inhale-3 { animation: digital-inhale 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards; opacity: 0; }
+                .inhale-4 { animation: digital-inhale 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards; opacity: 0; }
+                
+                .spectral-text {
+                    animation: spectral-glitch 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                }
+            `}</style>
             {/* TOKEN REDUCTION OVERLAY */}
             {tokenPhase === 'REDUCING' && (
-                <div className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-2xl animate-fade-in border border-amber-500/10 rounded-2xl">
+                <div className="absolute inset-0 z-[110] flex flex-col items-center justify-center bg-[#020617]/95 backdrop-blur-2xl border border-amber-500/10 rounded-2xl">
                     <div className="text-center space-y-8 max-w-md px-6">
                         <div className="flex justify-center">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-amber-500/20 blur-2xl rounded-full animate-pulse" />
+                                <div className="absolute inset-0 bg-amber-500/20 blur-2xl rounded-full" />
                                 <div className="relative bg-black border border-amber-500/20 p-8 rounded-full shadow-[0_0_30px_rgba(245,158,11,0.1)]">
-                                    <Crown className="w-12 h-12 text-amber-500 animate-bounce" />
+                                    <Crown className="w-12 h-12 text-amber-500" />
                                 </div>
                             </div>
                         </div>
@@ -158,7 +213,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                             </div>
                         </div>
 
-                        <p className="text-slate-400 text-xs font-mono animate-pulse">
+                        <p className="text-slate-400 text-xs font-mono">
                             Finalizing secure handshake & anchoring data...
                         </p>
                     </div>
@@ -167,7 +222,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
 
             {/* SUCCESS OVERLAY */}
             {tokenPhase === 'DONE' && (
-                <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl animate-fade-in border border-emerald-500/20 rounded-2xl shadow-[0_0_100px_rgba(16,185,129,0.1)]">
+                <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl border border-emerald-500/20 rounded-2xl shadow-[0_0_100px_rgba(16,185,129,0.1)]">
                     <div className="mb-8 relative">
                         <div className="absolute inset-0 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
                         <div className="relative bg-emerald-500/20 p-6 rounded-full border border-emerald-500/30">
@@ -191,7 +246,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                     <div className="flex gap-4">
                         <button
                             onClick={onNewMission}
-                            className="group relative px-8 py-4 bg-emerald-600 text-white font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-emerald-500 transition-all shadow-lg active:scale-95"
+                            className="group relative px-8 py-4 bg-emerald-600 text-white font-bold uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-emerald-500 shadow-lg"
                         >
                             Initialize New Sequence
                         </button>
@@ -235,7 +290,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
             )}
 
             {/* Header Cockpit */}
-            <div className={`flex flex-col md:flex-row items-center justify-between gap-6 glass-panel p-8 rounded-2xl relative overflow-hidden border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.05)] ${currentStatus === 'ABORTED' ? 'border-red-500/30 opacity-50 grayscale-[0.5]' : ''}`}>
+            <div className={`inhale-1 flex flex-col md:flex-row items-center justify-between gap-6 glass-panel p-8 rounded-2xl relative overflow-hidden border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.05)] ${currentStatus === 'ABORTED' ? 'border-red-500/30 opacity-50 grayscale-[0.5]' : ''}`}>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
                 <div className="flex items-center gap-6 relative z-10">
@@ -267,7 +322,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
 
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <div className={`w-2 h-2 rounded-full animate-pulse 
+                            <div className={`w-2 h-2 rounded-full 
                                 ${currentStatus === 'DONE' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' :
                                     currentStatus === 'ABORTED' ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' :
                                         'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}
@@ -281,7 +336,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                                         'Mission Active'}
                             </span>
                         </div>
-                        <h2 className="text-2xl font-serif font-bold text-white tracking-tight">{formTitle}</h2>
+                        <h2 className="text-2xl font-serif font-bold text-white tracking-tight spectral-text">{formTitle}</h2>
                         <SystemTelemetry />
                     </div>
                 </div>
@@ -333,7 +388,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
 
             {/* ACTIVE MONITORING DISCLAIMER - Simplified */}
             {currentStatus !== 'DONE' && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-4">
+                <div className="inhale-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-4">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
                         <AlertCircle className="w-5 h-5 text-amber-500" />
                     </div>
@@ -349,7 +404,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
 
 
             {/* Premium Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="inhale-3 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <PremiumStatCard
                     variant="progress"
                     label="MISSION STATUS"
@@ -382,7 +437,7 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
             </div>
 
             {/* Terminal View */}
-            <div className="glass-panel rounded-2xl overflow-hidden border-white/5 shadow-2xl">
+            <div className="inhale-4 glass-panel rounded-2xl overflow-hidden border-white/5 shadow-2xl">
                 <div className="bg-white/5 px-6 py-3 border-b border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Terminal className="w-4 h-4 text-slate-400" />
@@ -508,12 +563,12 @@ const PremiumStatCard = ({ variant, label, value, total, sub, color }: any) => {
                     <div className="flex flex-col">
                         {variant === 'timer' && !isZero ? (
                             <span className="text-2xl font-mono font-bold text-white tracking-tight tabular-nums">
-                                {Math.floor(Number(value) / 60)}<span className="text-slate-600 mx-0.5 animate-pulse">:</span>{(Number(value) % 60).toFixed(0).padStart(2, '0')}
+                                {Math.floor(Number(value) / 60)}<span className="text-slate-600 mx-0.5">:</span>{(Number(value) % 60).toFixed(0).padStart(2, '0')}
                             </span>
                         ) : (
                             <div className="flex items-baseline gap-1.5">
                                 <span className="text-3xl font-mono font-bold text-white tracking-tighter tabular-nums drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-                                    {isZero && variant === 'timer' ? '--:--' : value}
+                                    {isZero && variant === 'timer' ? '--:--' : <NumericRoll value={value} />}
                                 </span>
                                 {total && <span className="text-xs font-mono text-slate-500 font-medium">/ <span className="text-slate-400">{total}</span></span>}
                             </div>
@@ -527,7 +582,7 @@ const PremiumStatCard = ({ variant, label, value, total, sub, color }: any) => {
 
             {/* Bottom Active Line - Pro Style */}
             {!isZero && (
-                <div className={`absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-${color}-500/50 to-transparent w-full animate-[shimmer_3s_infinite]`} />
+                <div className={`absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-${color}-500/50 to-transparent w-full`} />
             )}
         </div>
     );
@@ -546,11 +601,11 @@ const LiveSessionID = () => {
 
     return (
         <div className="flex items-center gap-2 mt-1">
-            <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B0F19] border border-white/5 hover:border-emerald-500/20 transition-all duration-300">
+            <div className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B0F19] border border-white/5 hover:border-emerald-500/20">
                 <div className="flex gap-0.5 items-end h-3">
-                    <span className="w-0.5 h-2 bg-emerald-500 animate-[count-pulse_0.6s_ease-in-out_infinite]" />
-                    <span className="w-0.5 h-3 bg-emerald-500/50 animate-[count-pulse_0.8s_ease-in-out_infinite]" />
-                    <span className="w-0.5 h-1.5 bg-emerald-500/20 animate-[count-pulse_1s_ease-in-out_infinite]" />
+                    <span className="w-0.5 h-2 bg-emerald-500" />
+                    <span className="w-0.5 h-3 bg-emerald-500/50" />
+                    <span className="w-0.5 h-1.5 bg-emerald-500/20" />
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -562,7 +617,7 @@ const LiveSessionID = () => {
                     </span>
                 </div>
 
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse ml-1" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] ml-1" />
             </div>
         </div>
     );
@@ -581,14 +636,13 @@ const SystemTelemetry = () => {
     }, []);
 
     return (
-        <div className="flex items-center gap-3 mt-1.5 animate-fade-in">
+        <div className="flex items-center gap-3 mt-1.5">
             {/* Connection Status Pill */}
-            <div className="group flex items-center gap-3 px-3 py-1.5 rounded-full bg-[#0B0F19]/80 border border-white/5 hover:border-emerald-500/20 transition-all duration-300 shadow-lg backdrop-blur-md">
+            <div className="group flex items-center gap-3 px-3 py-1.5 rounded-full bg-[#0B0F19]/80 border border-white/5 hover:border-emerald-500/20 shadow-lg backdrop-blur-md">
 
                 {/* Ping Indicator */}
                 <div className="flex items-center gap-2 pr-3 border-r border-white/5">
                     <div className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </div>
                     <span className="font-mono text-[10px] text-slate-400">

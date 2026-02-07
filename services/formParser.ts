@@ -110,9 +110,39 @@ export const fetchAndParseForm = async (url: string): Promise<{ title: string; q
 
   // Extract Data
   const scriptRegex = /var\s+FB_PUBLIC_LOAD_DATA_\s*=\s*(\[.+?\])\s*;/s;
-  const match = html.match(scriptRegex);
+  const wizRegex = /window\.WIZ_global_data\s*=\s*(\{.+?\})\s*;/s; // Alternative source
 
-  if (!match || !match[1]) {
+  const match = html.match(scriptRegex);
+  const wizMatch = html.match(wizRegex);
+
+  let jsonData: any = null;
+
+  if (match && match[1]) {
+    try {
+      jsonData = JSON.parse(match[1]);
+    } catch (e) {
+      console.warn('[FormParser] Failed to parse FB_PUBLIC_LOAD_DATA_, trying fallback...', e);
+    }
+  }
+
+  // If FB data is missing or invalid, try WIZ_global_data (found in newer forms)
+  if (!jsonData && wizMatch && wizMatch[1]) {
+    try {
+      const wizData = JSON.parse(wizMatch[1]);
+      // Search for the array structure that resembles FB_PUBLIC_LOAD_DATA_ inside WIZ data
+      // This is a heuristic based on known Google Form structures in WIZ data
+      Object.keys(wizData).forEach(key => {
+        const val = wizData[key];
+        if (Array.isArray(val) && val.length > 1 && Array.isArray(val[1]) && val[1].length > 1) {
+          jsonData = val;
+        }
+      });
+    } catch (e) {
+      console.error('[FormParser] Failed to parse WIZ_global_data', e);
+    }
+  }
+
+  if (!jsonData) {
     throw new Error('Invalid form structure. Could not find data payload.');
   }
 
@@ -124,7 +154,7 @@ export const fetchAndParseForm = async (url: string): Promise<{ title: string; q
     let htmlTitle = metaTitleMatch ? metaTitleMatch[1] : (titleTagMatch ? titleTagMatch[1] : '');
     htmlTitle = htmlTitle.replace(/ - Google Forms$/, ''); // Clean suffix
 
-    const json = JSON.parse(match[1]);
+    const json = jsonData;
 
     // Extract hidden inputs (like fbzx, pageHistory, etc.) from HTML
     // These are CRITICAL for avoiding "fake success" and getting rejected by Google

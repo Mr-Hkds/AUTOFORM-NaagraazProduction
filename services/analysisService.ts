@@ -16,7 +16,10 @@ const DEMOGRAPHIC_PATTERNS: Record<string, number[]> = {
   'DEFAULT_5': [5, 15, 40, 30, 10],           // Skewed bell curve (Positive lean)
   'DEFAULT_4': [10, 35, 40, 15],              // Skewed 4-option
   'DEFAULT_3': [20, 55, 25],                  // Center-heavy 3-option
-  'YES_NO': [75, 25]                          // Strong affirmative bias
+  'YES_NO': [75, 25],                         // Strong affirmative bias
+  'PAYMENT': [85, 10, 3, 2],                  // UPI/Digital heavily weighted in India
+  'SPENDING': [15, 30, 45, 10],               // Frequently/Occasionally weighted
+  'LOCATION': [70, 20, 10]                    // Urban/Semi-Urban weighted
 };
 
 const calculateDemographicWeights = (questionText: string, options: string[]): number[] => {
@@ -82,6 +85,16 @@ const calculateDemographicWeights = (questionText: string, options: string[]): n
   if (patternKey) {
     const basePattern = DEMOGRAPHIC_PATTERNS[patternKey];
     if (basePattern.length === optionCount) finalWeights = [...basePattern];
+  }
+
+  // --- SPECIFIC KEYWORD MATCHING ---
+  if (normalizedText.includes('HOW OFTEN') || normalizedText.includes('FREQUENCY')) {
+    const weights = [5, 15, 45, 35]; // Rarely, Occasionally, Frequently, Daily
+    if (optionCount === 4) finalWeights = weights;
+  }
+
+  if (normalizedText.includes('PAYMENT METHOD')) {
+    if (optionCount === 4) finalWeights = [85, 8, 4, 3]; // Digital heavy
   }
 
   // Default Skewed Bell Curves
