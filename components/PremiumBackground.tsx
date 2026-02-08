@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PremiumBackground = () => {
+const PremiumBackground = React.memo(() => {
     return (
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#000000] transform-gpu translate-z-0 backface-hidden perspective-1000">
             {/* 1. Deep Grain Noise Texture - Optimized */}
@@ -27,6 +27,6 @@ const PremiumBackground = () => {
             />
         </div>
     );
-};
+});
 
 export default PremiumBackground;

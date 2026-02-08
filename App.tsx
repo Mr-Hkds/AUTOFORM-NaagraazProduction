@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Log Version for Vercel Verification
-console.log('[SYSTEM] AutoForm AI v4.1.4 Loaded [Razorpay Fixes Included]');
+console.log('[SYSTEM] AutoForm AI 4.0.2 STABLE Loaded');
 import { Bot, Copy, CheckCircle, AlertCircle, BarChart3, ArrowRight, ArrowLeft, RotateCcw, Sparkles, Code2, Terminal, Zap, Command, Activity, Cpu, Crown, LogOut, Settings, Lock, Laptop, Monitor, Target, ShieldCheck, ExternalLink, Rocket } from 'lucide-react';
 import { fetchAndParseForm } from './services/formParser';
 import { analyzeForm as analyzeFormWithStatistics, generateResponseSuggestions } from './services/analysisService';
@@ -23,6 +23,7 @@ import Header from './components/Header';
 import PremiumBackground from './components/PremiumBackground';
 import LegalPage from './components/LegalPage';
 import MatrixReveal from './components/MatrixReveal';
+import Step2Dashboard from './components/Step2Dashboard';
 
 // --- VISUAL COMPONENTS ---
 
@@ -146,88 +147,12 @@ const RecommendationModal = ({ onClose, onSelect }: { onClose: () => void, onSel
     </div>
 );
 
-// --- TagInput Component for Multi-Value Text Fields ---
-const TagInput = ({ value, onChange, placeholder, isParagraph = false }: { value: string, onChange: (val: string) => void, placeholder: string, isParagraph?: boolean }) => {
-    const [inputValue, setInputValue] = useState('');
-    const tags = value ? value.split(',').map(t => t.trim()).filter(t => t !== '') : [];
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ',') {
-            if (e.key === 'Enter' && isParagraph && e.shiftKey) return; // Allow shift+enter for genuine newlines in draft? (Tricky without real textarea)
-
-            e.preventDefault();
-            const tag = inputValue.trim();
-            if (tag && !tags.includes(tag)) {
-                onChange(value ? `${value}, ${tag}` : tag);
-            }
-            setInputValue('');
-        } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
-            const newTags = [...tags];
-            newTags.pop();
-            onChange(newTags.join(', '));
-        }
-    };
-
-    const removeTag = (index: number) => {
-        const newTags = tags.filter((_, i) => i !== index);
-        onChange(newTags.join(', '));
-    };
-
-    return (
-        <div className={`flex flex-wrap gap-2 p-3 bg-black/40 border border-white/10 rounded-xl transition-all shadow-inner group/taginput ${isParagraph ? 'min-h-[120px] focus-within:border-emerald-500/50' : 'min-h-[56px] focus-within:border-amber-500/50'}`}>
-            {tags.map((tag, i) => (
-                <div key={i} className={`flex items-center gap-2 px-2.5 py-1.5 border rounded-lg text-[10px] font-bold animate-fade-in group/tag ${isParagraph ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 w-full' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
-                    <span className={`${isParagraph ? '' : 'max-w-[150px] truncate'}`}>{tag}</span>
-                    <button
-                        onClick={() => removeTag(i)}
-                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-all shrink-0 ${isParagraph ? 'hover:bg-emerald-500/20 text-emerald-500/50' : 'hover:bg-amber-500/20 text-amber-500/50'}`}
-                    >
-                        ✕
-                    </button>
-                </div>
-            ))}
-            {isParagraph ? (
-                <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            handleKeyDown(e as any);
-                        }
-                    }}
-                    placeholder={tags.length === 0 ? placeholder : 'Add another variant...'}
-                    className="w-full bg-transparent border-none outline-none text-[11px] text-white font-mono px-2 py-1 min-h-[40px] placeholder:text-slate-600 resize-none"
-                />
-            ) : (
-                <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={tags.length === 0 ? placeholder : ''}
-                    className="flex-1 bg-transparent border-none outline-none text-[11px] text-white font-mono px-2 min-w-[150px] placeholder:text-slate-600"
-                />
-            )}
-
-            <div className="w-full flex justify-between items-center mt-auto pt-2 border-t border-white/5">
-                <div className="flex items-center gap-1.5 text-[9px] text-slate-600 font-bold uppercase tracking-widest">
-                    <Command className="w-3 h-3" />
-                    {tags.length} Response {tags.length === 1 ? 'Variant' : 'Variants'}
-                </div>
-                {isParagraph && (
-                    <div className="text-[8px] text-slate-700 font-mono uppercase tracking-tighter">
-                        Press Enter to add variant • Shift+Enter for newline
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 // --- APP COMPONENTS ---
 
 
-const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refund' | 'contact' | null) => void }) => (
+const Footer = React.memo(({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refund' | 'contact' | null) => void }) => (
     <footer className="w-full py-12 mt-auto border-t border-white/5 relative z-10 bg-black overflow-hidden mb-20 md:mb-0">
         <div className="max-w-6xl mx-auto px-6 flex flex-col items-center justify-center relative z-10">
 
@@ -320,13 +245,12 @@ const Footer = ({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'terms' | 'refu
             {/* Version System Tag */}
             <div className="absolute bottom-2 right-4 opacity-80 hover:opacity-100 transition-opacity">
                 <span className="text-[9px] text-slate-500 font-mono tracking-[0.2em] uppercase">
-                    Build v4.1.4
+                    Build 4.0.2 STABLE
                 </span>
             </div>
-
         </div>
     </footer>
-);
+));
 
 // DELETED: LoadingState replaced by LoadingScreen component
 
@@ -886,7 +810,7 @@ function App() {
             const questionDecks: Record<string, string[]> = {};
 
             analysis.questions.forEach(q => {
-                if ((q.type === 'MULTIPLE_CHOICE' || q.type === 'DROPDOWN' || q.type === 'CHECKBOXES') && q.options.length > 0) {
+                if ((q.type === 'MULTIPLE_CHOICE' || q.type === 'DROPDOWN' || q.type === 'CHECKBOXES' || q.type === 'LINEAR_SCALE') && q.options.length > 0) {
                     const deck: string[] = [];
 
                     // 1. Calculate exact counts using Largest Remainder Method
@@ -1147,18 +1071,18 @@ function App() {
 
         setAutomationLogs([]);
 
-        // --- ATMOSPHERIC VERIFICATION SEQUENCE (3000ms) ---
+        // --- ATMOSPHERIC VERIFICATION SEQUENCE (4500ms) ---
         setIsLaunching(true);
 
         // Sequence: 
-        // 0-2200ms: Neural Handshake & Calibration
-        // 2200ms: Glow Blade Swipe Starts
-        // 2600ms: Page Swap (Behind the Blade)
-        // 3000ms: Transition End
+        // 0-3500ms: Neural Handshake & Calibration
+        // 3500ms: Glow Blade Swipe / Engagement Flash Starts
+        // 4000ms: Page Swap (Behind the flash)
+        // 4500ms: Transition End
 
         setTimeout(() => {
             setStep(3);
-        }, 2600);
+        }, 4000);
 
         setTimeout(async () => {
             setIsLaunching(false);
@@ -1167,7 +1091,7 @@ function App() {
             } catch (err) {
                 console.error("Auto-Run failed", err);
             }
-        }, 3000);
+        }, 4500);
     };
 
     const handleAIInject = () => {
@@ -1247,126 +1171,145 @@ function App() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
                     <style>{`
                         @keyframes core-inhale {
-                            0% { opacity: 0; scale: 0.8; filter: blur(20px); }
+                            0% { opacity: 0; scale: 0.95; filter: blur(10px); }
                             100% { opacity: 1; scale: 1; filter: blur(0px); }
                         }
-                        @keyframes scan-line {
-                            0% { transform: translateY(-100%); opacity: 0; }
+                        @keyframes cinematic-bar-in {
+                            0% { height: 0; }
+                            100% { height: 12vh; }
+                        }
+                        @keyframes data-flow {
+                            0% { transform: translateY(0); }
+                            100% { transform: translateY(-50%); }
+                        }
+                        @keyframes engagement-flash {
+                            0% { opacity: 0; }
+                            50% { opacity: 1; background: white; }
+                            100% { opacity: 0; }
+                        }
+                        @keyframes hud-scan {
+                            0% { top: 0%; opacity: 0; }
                             50% { opacity: 0.5; }
-                            100% { transform: translateY(100%); opacity: 0; }
+                            100% { top: 100%; opacity: 0; }
                         }
-                        @keyframes deep-space-pulse {
-                            0% { opacity: 0.3; transform: scale(1); }
-                            50% { opacity: 0.6; transform: scale(1.1); }
-                            100% { opacity: 0.3; transform: scale(1); }
-                        }
-                        @keyframes liquid-wave-pan {
-                            0% { transform: translateX(-100%); opacity: 0; }
-                            50% { opacity: 1; }
-                            100% { transform: translateX(100%); opacity: 0; }
-                        }
-                        @keyframes stardust-float {
-                            0% { transform: translateY(0px); opacity: 0; }
-                            50% { opacity: 0.8; }
-                            100% { transform: translateY(-20px); opacity: 0; }
-                        }
-                        .atmospheric-overlay {
+                        .letterbox-bar {
                             position: absolute;
-                            inset: 0;
-                            background: #000000;
-                            z-index: 0;
+                            left: 0;
+                            right: 0;
+                            background: black;
+                            z-index: 50;
+                            animation: cinematic-bar-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                         }
-                        .deep-bloom {
+                        .neural-stream {
                             position: absolute;
-                            inset: 0;
-                            background: radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
-                            animation: deep-space-pulse 4s ease-in-out infinite;
-                            z-index: 10;
-                        }
-                        .fluid-wave {
-                            position: absolute;
-                            inset: 0;
-                            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.5), rgba(255, 255, 255, 0.1), transparent);
-                            filter: blur(40px);
-                            animation: liquid-wave-pan 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                            z-index: 20;
+                            inset: -100% 0;
+                            font-family: 'JetBrains Mono', monospace;
+                            font-size: 10px;
+                            color: #10b981;
+                            opacity: 0.05;
+                            line-height: 1.2;
+                            user-select: none;
                             pointer-events: none;
+                            animation: data-flow 20s linear infinite;
+                            z-index: 5;
+                            white-space: pre;
                         }
-                        .stardust-1 { top: 20%; left: 30%; animation: stardust-float 3s ease-in-out infinite; animation-delay: 0.2s; }
-                        .stardust-2 { top: 60%; left: 70%; animation: stardust-float 4s ease-in-out infinite; animation-delay: 0.5s; }
-                        .stardust-3 { top: 40%; left: 80%; animation: stardust-float 3.5s ease-in-out infinite; animation-delay: 1.2s; }
-                        .stardust-4 { top: 80%; left: 20%; animation: stardust-float 4.5s ease-in-out infinite; animation-delay: 0.8s; }
+                        .tactical-border {
+                            position: absolute;
+                            width: 20px;
+                            height: 20px;
+                            border-color: rgba(16, 185, 129, 0.4);
+                        }
                     `}</style>
 
-                    {/* Background Elements */}
-                    <div className="atmospheric-overlay" />
-                    <div className="deep-bloom" />
-                    <div className="fluid-wave" />
+                    {/* Cinematic Bars */}
+                    <div className="letterbox-bar top-0 border-b border-white/5" />
+                    <div className="letterbox-bar bottom-0 border-t border-white/5" />
 
-                    {/* Stardust Particles */}
-                    <div className="absolute w-1 h-1 bg-white rounded-full opacity-0 stardust-1 z-30" />
-                    <div className="absolute w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-0 stardust-2 z-30" />
-                    <div className="absolute w-1 h-1 bg-white rounded-full opacity-0 stardust-3 z-30" />
-                    <div className="absolute w-1 h-1 bg-emerald-500/50 rounded-full opacity-0 stardust-4 z-30" />
+                    {/* Engagement Flash Overlay */}
+                    <div className="fixed inset-0 z-[110] pointer-events-none mix-blend-screen opacity-0 animate-[engagement-flash_1s_ease-out_2.5s_forwards]" />
 
-                    {/* HOLOGRAPHIC HUD CARD */}
-                    <div className="relative z-10 w-full max-w-md bg-black/40 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md animate-[core-inhale_0.8s_ease-out_forwards]">
-                        {/* Scanline Texture */}
-                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px] opacity-20 pointer-events-none" />
-                        <div className="absolute inset-0 bg-emerald-500/5 animate-pulse" />
+                    {/* Background Content */}
+                    <div className="absolute inset-0 bg-black z-0" />
+                    <div className="neural-stream">
+                        {Array(50).fill('01011010 SYNC_CORE_LOAD AUTH_HANDSHAKE_PROCEED\n0x7F2A9B ENGINE_READY NEURAL_LINK_ESTABLISHED\nSYSTEM_INTEGRITY_CHECK_PASS MISSION_VECTOR_LOCKED\n').join('')}
+                    </div>
 
-                        <div className="p-8 flex flex-col items-center text-center relative z-20">
-                            {/* Central Neural Icon */}
-                            <div className="relative mb-8">
-                                <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-150 animate-pulse" />
-                                <div className="relative bg-black border border-emerald-500/30 p-6 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.15)]">
-                                    <Zap className="w-10 h-10 text-emerald-400" />
+                    {/* TACTICAL COMMAND HUD */}
+                    <div className="relative z-10 w-[90%] max-w-lg animate-[core-inhale_0.6s_ease-out_forwards]">
+
+                        {/* HUD Corners */}
+                        <div className="tactical-border top-0 left-0 border-t-2 border-l-2" />
+                        <div className="tactical-border top-0 right-0 border-t-2 border-r-2" />
+                        <div className="tactical-border bottom-0 left-0 border-b-2 border-l-2" />
+                        <div className="tactical-border bottom-0 right-0 border-b-2 border-r-2" />
+
+                        <div className="glass-panel-premium border border-white/10 overflow-hidden relative">
+                            {/* HUD Scan Line */}
+                            <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-[hud-scan_2s_linear_infinite]" />
+
+                            <div className="p-8 flex flex-col items-center text-center">
+                                {/* Core Visual */}
+                                <div className="relative mb-10">
+                                    <div className="absolute inset-0 bg-emerald-500/10 blur-3xl scale-150 animate-pulse" />
+                                    <div className="w-20 h-20 rounded-2xl border border-emerald-500/40 bg-black/40 flex items-center justify-center relative backdrop-blur-3xl overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 via-transparent to-transparent group-hover:animate-shimmer-flow" />
+                                        <Cpu className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                    <div className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-emerald-500 text-black text-[8px] font-bold uppercase rounded">Live</div>
                                 </div>
-                                <div className="absolute inset-[-10px] border border-emerald-500/10 rounded-xl animate-spin [animation-duration:10s]" />
-                            </div>
 
-                            {/* Status Messages */}
-                            <div className="space-y-2 w-full">
-                                <h3 className="text-xl font-mono font-bold text-white tracking-widest uppercase mb-1">
-                                    System Integ.
-                                </h3>
-                                <div className="h-6 flex items-center justify-center bg-black/30 w-full rounded border border-white/5">
-                                    <span className="text-[10px] font-mono text-emerald-400 tracking-[0.2em] uppercase animate-pulse">
-                                        {progress < 30 ? "Verifying Response Vectors..." :
-                                            progress < 70 ? "Syncing Neural Core..." :
-                                                "Bypassing Security Protocol..."}
-                                    </span>
-                                </div>
-                            </div>
+                                {/* Mission Status */}
+                                <div className="space-y-4 w-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Operation: Synchronize</span>
+                                        <span className="text-[10px] font-mono text-emerald-500 font-bold uppercase">System: Stable</span>
+                                    </div>
 
-                            {/* Visual Progress Bar */}
-                            <div className="mt-8 w-full">
-                                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-1 uppercase tracking-widest">
-                                    <span>Calibration</span>
-                                    <span>{Math.round((Math.min(3000, 3000) / 3000) * 100)}%</span>
+                                    <div className="h-14 border border-white/5 bg-black/40 rounded-xl flex items-center justify-center relative overflow-hidden group">
+                                        {/* Decorative Technical Text */}
+                                        <div className="absolute left-2 top-2 text-[6px] font-mono text-slate-700 uppercase tracking-tighter">Memory_Alloc: 512mb</div>
+                                        <div className="absolute right-2 bottom-2 text-[6px] font-mono text-slate-700 uppercase tracking-tighter">Latency: 0.1ms</div>
+
+                                        <span className="text-sm font-mono text-white tracking-[0.3em] font-bold uppercase">
+                                            {progress < 25 ? "Verifying Access" :
+                                                progress < 50 ? "Neural Handshake" :
+                                                    progress < 75 ? "Syncing Logic" :
+                                                        "Engaging Drive"}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                                    <div className="h-full bg-emerald-500 rounded-full animate-[progress-run_2.8s_ease-out_forwards] shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+
+                                {/* Multi-Stage Progress */}
+                                <div className="mt-8 w-full space-y-2">
+                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden flex gap-1 p-[1px]">
+                                        {[...Array(20)].map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className={`flex-1 h-full rounded-sm transition-all duration-500 ${Math.floor((progress / 100) * 20) > i ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-white/10'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-between text-[8px] font-mono text-slate-600 uppercase tracking-widest">
+                                        <span>Sub-Routine Init</span>
+                                        <span>Target: Mission_Ctrl</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Card Footer Detail */}
-                        <div className="h-1 w-full bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50" />
+                        {/* Side HUD Telemetry */}
+                        <div className="absolute -left-32 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 w-28 opacity-40">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="space-y-1">
+                                    <div className="h-0.5 w-full bg-white/10 overflow-hidden">
+                                        <div className="h-full bg-emerald-500/50 w-1/2 animate-pulse" />
+                                    </div>
+                                    <div className="text-[7px] font-mono text-slate-500 uppercase">Tlm_Stream_{i}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-
-                    <style>{`
-                        @keyframes progress-run {
-                            0% { width: 0%; }
-                            100% { width: 100%; }
-                        }
-                        @keyframes fade-in {
-                            0% { opacity: 0; transform: translateY(5px); }
-                            10% { opacity: 1; transform: translateY(0); }
-                            90% { opacity: 1; transform: translateY(0); }
-                            100% { opacity: 0; transform: translateY(-5px); }
-                        }
-                    `}</style>
                 </div>
             )}
 
@@ -1408,644 +1351,37 @@ function App() {
                                     />
                                 )}
 
-                                {/* STEP 2: DASHBOARD */}
+                                {/* STEP 2: CONFIGURATION */}
                                 {step === 2 && analysis && (
-                                    <section className="w-full animate-fade-in-up">
-                                        {/* Progress Indicator */}
-                                        <div className="mb-6 flex items-center justify-center gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
-                                                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                                                </div>
-                                                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Analyzed</span>
-                                            </div>
-                                            <div className="w-12 h-0.5 bg-gradient-to-r from-emerald-500 to-amber-500" />
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-amber-500 border-2 border-amber-400 flex items-center justify-center animate-pulse">
-                                                    <span className="text-xs font-black text-white">2</span>
-                                                </div>
-                                                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Configure</span>
-                                            </div>
-                                            <div className="w-12 h-0.5 bg-white/10" />
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-white/5 border-2 border-white/20 flex items-center justify-center">
-                                                    <span className="text-xs font-black text-white/40">3</span>
-                                                </div>
-                                                <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Launch</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Instruction Banner */}
-                                        <div className="mb-6 glass-panel p-4 rounded-xl border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-500/10 to-transparent animate-fade-in-up">
-                                            <div className="flex items-start gap-3">
-                                                <div className="bg-emerald-500/20 p-2 rounded-lg">
-                                                    <ArrowRight className="w-5 h-5 text-emerald-400" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h3 className="text-sm font-bold text-white mb-1 uppercase tracking-wide">Ready for Launch?</h3>
-                                                    <p className="text-xs text-slate-300 leading-relaxed">Review your settings below, then click the vibrant <span className="text-emerald-400 font-semibold">"Launch Mission"</span> button to begin.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-8">
-                                            <div>
-                                                <h2 className="text-3xl font-serif font-bold text-white mb-2 tracking-tight">{analysis.title}</h2>
-                                                <div className="flex gap-3">
-                                                    <Badge color="obsidian">{analysis.questions.length} Fields</Badge>
-                                                    <Badge color="gold">Algorithm Optimized</Badge>
-                                                    {user && (user.tokens || 0) < targetCount && (
-                                                        <button
-                                                            onClick={() => setShowPricing(true)}
-                                                            className="text-[10px] text-amber-500 hover:text-amber-400 font-bold uppercase tracking-widest flex items-center gap-1.5 animate-pulse ml-1"
-                                                        >
-                                                            <Crown className="w-3 h-3" />
-                                                            Low on tokens? Refill
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-2">
-                                                <div className="flex gap-3">
-                                                    <button onClick={reset} className="glass-panel px-6 py-3 rounded-lg text-slate-400 text-sm hover:text-white transition">
-                                                        Cancel
-                                                    </button>
-                                                    <div className="relative">
-                                                        {/* Halo Pulse for Premium Visibility */}
-                                                        <div className="absolute -inset-2 bg-emerald-500/10 rounded-2xl blur-xl animate-pulse group-hover:bg-emerald-500/20 transition-colors" />
-                                                        <button
-                                                            onClick={handleCompile}
-                                                            disabled={isLaunching}
-                                                            className={`relative group flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-emerald-500/90 to-teal-600/90 rounded-xl shadow-lg border border-emerald-400/20 transition-all duration-200 ${isLaunching ? 'scale-95 brightness-75' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                                                        >
-                                                            {/* Premium "Bloom" Radial Glow */}
-                                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.15)_0%,transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
-
-                                                            {/* Status Indicator */}
-                                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-black/20 rounded-md border border-white/10">
-                                                                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                                                                <span className="text-[9px] font-bold text-white uppercase tracking-wider">Ready</span>
-                                                            </div>
-
-                                                            {/* Icon */}
-                                                            <div className="bg-black/15 p-2 rounded-lg group-hover:bg-black/25 transition-colors">
-                                                                <Zap className="w-5 h-5 text-white" />
-                                                            </div>
-
-                                                            {/* Label */}
-                                                            <div className="flex flex-col items-start flex-1">
-                                                                <span className="text-[10px] font-semibold text-emerald-100/70 uppercase tracking-wide">Ready to Start</span>
-                                                                <span className="text-base font-bold text-white uppercase tracking-wide">Launch Mission</span>
-                                                            </div>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest opacity-70">
-                                                    Click to start the automated process
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {error && (
-                                            <div className="mb-6 flex items-center gap-3 text-red-200 bg-red-950/80 border border-red-500/30 px-6 py-4 rounded-xl text-sm font-medium backdrop-blur-xl shadow-xl">
-                                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                                <span className="flex-1">{error}</span>
-                                            </div>
-                                        )}
-
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                            {/* Left Col: Config */}
-                                            <div className="space-y-6">
-                                                <div className="glass-panel p-6 rounded-xl space-y-8">
-                                                    <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-                                                        <Settings className="w-4 h-4 text-amber-500" /> Runtime Config
-                                                    </div>
-
-                                                    <div className="mt-4 mb-4">
-                                                        <label className="block text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center justify-between gap-2">
-                                                            <span className="flex items-center gap-2">
-                                                                <Target className="w-4 h-4 text-emerald-500" />
-                                                                Number of Responses to Generate
-                                                            </span>
-                                                            <button
-                                                                onClick={() => setShowRecommendationModal(true)}
-                                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all active:scale-95"
-                                                            >
-                                                                <ShieldCheck className="w-3 h-3" />
-                                                                <span className="text-[9px] font-bold uppercase tracking-wider">Academic Guide</span>
-                                                            </button>
-                                                        </label>
-
-                                                        <div className="flex flex-col gap-6">
-                                                            <div className="flex items-center gap-4">
-                                                                <button
-                                                                    onClick={() => setTargetCount(Math.max(1, (targetCount || 0) - 10))}
-                                                                    className="w-14 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-2xl transition-all active:scale-90 border border-slate-700"
-                                                                >
-                                                                    −
-                                                                </button>
-                                                                <input
-                                                                    type="number"
-                                                                    min={1}
-                                                                    max={30}
-                                                                    value={isNaN(targetCount) ? '' : targetCount}
-                                                                    onChange={(e) => {
-                                                                        if (e.target.value === '') {
-                                                                            setTargetCount(NaN);
-                                                                            return;
-                                                                        }
-                                                                        const val = Math.min(Number(e.target.value), 30);
-                                                                        checkBalanceAndRedirect(val);
-                                                                        setTargetCount(val);
-                                                                    }}
-                                                                    className="flex-1 h-14 bg-slate-900/50 border-2 border-slate-700 rounded-2xl text-center text-amber-400 font-mono font-bold text-2xl focus:outline-none focus:border-amber-500 transition-colors shadow-inner"
-                                                                />
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const newVal = Math.min(30, (targetCount || 0) + 10);
-                                                                        checkBalanceAndRedirect(newVal);
-                                                                        setTargetCount(newVal);
-                                                                    }}
-                                                                    className="w-14 h-14 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 hover:text-amber-400 flex items-center justify-center font-bold text-2xl transition-all active:scale-90 border border-amber-500/30"
-                                                                >
-                                                                    +
-                                                                </button>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-5 gap-2">
-                                                                {[5, 10, 15, 20, 30].map((preset) => (
-                                                                    <button
-                                                                        key={preset}
-                                                                        onClick={() => {
-                                                                            checkBalanceAndRedirect(preset);
-                                                                            setTargetCount(preset);
-                                                                        }}
-                                                                        className={`py-3 rounded-xl text-xs font-mono font-bold transition-all active:scale-95 border ${targetCount === preset
-                                                                            ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                                                                            : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white border-slate-700'
-                                                                            }`}
-                                                                    >
-                                                                        {preset}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-
-                                                        {user && targetCount > (user.tokens || 0) && (
-                                                            <div className="mt-4 bg-red-900/40 text-red-200 text-xs px-4 py-3 rounded-xl border border-red-500/30 animate-fade-in flex items-center justify-between">
-                                                                <span className="flex items-center gap-2">
-                                                                    <AlertCircle className="w-4 h-4" />
-                                                                    Insufficient Tokens (Current: {user.tokens})
-                                                                </span>
-                                                                <button
-                                                                    onClick={() => setShowPricing(true)}
-                                                                    className="bg-red-500 text-white px-3 py-1 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-red-400 transition-colors"
-                                                                >
-                                                                    Upgrade
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-200/80 leading-relaxed font-mono">
-                                                        <span className="text-red-400 font-bold block mb-1 flex items-center gap-1.5">
-                                                            <ShieldCheck className="w-3 h-3" />
-                                                            SYSTEM SECURITY PROTOCOL
-                                                        </span>
-                                                        To maintain account integrity, avoid exceeding 100 responses per hour per IP address.
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex justify-between items-center text-xs font-bold text-white uppercase tracking-widest">
-                                                    <div className="flex items-center gap-2">
-                                                        <Zap className="w-4 h-4 text-amber-500" /> Interaction Speed
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {speedMode === 'auto' && (
-                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">
-                                                                AUTO-OPTIMIZED
-                                                            </span>
-                                                        )}
-                                                        <span className={`font-mono ${delayMin === 0 ? 'text-fuchsia-400' : delayMin <= 100 ? 'text-red-400' : delayMin <= 500 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                                            {delayMin === 0 ? 'Warp' : delayMin === 100 ? 'Intensive' : delayMin === 500 ? 'Efficient' : 'Realistic'} ({delayMin}ms)
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <button
-                                                        onClick={() => setSpeedMode('auto')}
-                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 col-span-1 ${speedMode === 'auto'
-                                                            ? 'bg-emerald-500/20 border-emerald-500 text-white shadow-lg'
-                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
-                                                            }`}
-                                                    >
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Best Choice</span>
-                                                        <span className="text-[7px] opacity-60 text-center leading-tight">Recommended</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { setSpeedMode('manual'); setDelayMin(1000); }}
-                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 ${speedMode === 'manual' && delayMin >= 1000
-                                                            ? 'bg-amber-500/20 border-amber-500 text-white shadow-lg'
-                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
-                                                            }`}
-                                                    >
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Steady</span>
-                                                        <span className="text-[7px] opacity-60 text-center leading-tight">Human-Like</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { setSpeedMode('manual'); setDelayMin(0); }}
-                                                        className={`flex flex-col items-center py-3 px-1 rounded-xl border transition-all active:scale-95 ${speedMode === 'manual' && delayMin === 0
-                                                            ? 'bg-fuchsia-500/20 border-fuchsia-500 text-white shadow-lg'
-                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
-                                                            }`}
-                                                    >
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider mb-0.5">Warp Drive</span>
-                                                        <span className="text-[7px] opacity-60 text-center leading-tight">0 Latency</span>
-                                                    </button>
-                                                </div>
-
-                                                {delayMin === 0 && (
-                                                    <div className="p-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-[9px] text-fuchsia-200/80 leading-relaxed font-mono animate-pulse">
-                                                        <span className="text-fuchsia-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
-                                                            <Zap className="w-3 h-3" /> Warp Drive Engaged
-                                                        </span>
-                                                        Minimal latency. Requests execute as fast as the system allows. Higher detection risk.
-                                                    </div>
-                                                )}
-                                                {speedMode === 'auto' && (
-                                                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-200/80 leading-relaxed font-mono">
-                                                        <span className="text-emerald-400 font-bold block mb-1 flex items-center gap-1.5 uppercase">
-                                                            <Sparkles className="w-3 h-3" /> Smart Balancing
-                                                        </span>
-                                                        Speed automatically adjusted to {delayMin === 0 ? 'maximum' : delayMin === 100 ? 'intensive' : delayMin === 500 ? 'balanced' : 'organic'} based on project scale.
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Right Col: Operations */}
-                                            <div className="lg:col-span-2 flex flex-col gap-6">
-                                                {/* Name Source Selection */}
-                                                {analysis.questions.some(q => q.title.toLowerCase().includes('name')) && (
-                                                    <div className="glass-panel p-6 rounded-xl space-y-4 border-l-2 border-l-amber-500/50 bg-amber-500/[0.02]">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-                                                                <Command className="w-4 h-4 text-amber-500" /> Identity Generator Configuration
-                                                            </div>
-                                                            <span className="text-[9px] text-amber-500 font-bold bg-amber-500/10 px-2 py-1 rounded">REQUIRED CONFIGURATION</span>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            {[
-                                                                { id: 'auto', label: 'AI Auto', desc: 'Contextual selection' },
-                                                                { id: 'indian', label: 'Indian DB', desc: 'Regional names' },
-                                                                { id: 'custom', label: 'Manual List', desc: 'User specified' }
-                                                            ].map((opt) => (
-                                                                <button
-                                                                    key={opt.id}
-                                                                    onClick={() => setNameSource(opt.id as any)}
-                                                                    className={`text-[10px] font-mono group relative overflow-hidden flex flex-col items-center py-4 rounded-xl border transition-all ${nameSource === opt.id
-                                                                        ? 'bg-amber-500/20 border-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.15)]'
-                                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:border-white/10'
-                                                                        }`}
-                                                                >
-                                                                    {nameSource === opt.id && <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500" />}
-                                                                    <span className="font-bold tracking-widest uppercase mb-1">{opt.label}</span>
-                                                                    <span className="opacity-50 text-[8px] tracking-tight">{opt.desc}</span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-
-                                                        {nameSource === 'custom' && (
-                                                            <TagInput
-                                                                value={customNamesRaw}
-                                                                onChange={(val) => setCustomNamesRaw(val)}
-                                                                placeholder="Enter names and press Enter or Comma..."
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* AI DATA INJECTION */}
-                                                {(() => {
-                                                    const relevantTextFields = analysis.questions.filter(q =>
-                                                        (q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH') &&
-                                                        !q.title.toLowerCase().includes('name')
-                                                    );
-
-                                                    if (relevantTextFields.length === 0) return null;
-
-                                                    const isRequired = relevantTextFields.some(q => q.required);
-
-                                                    return (
-                                                        <div className={`glass-panel p-6 rounded-xl space-y-4 border-l-2 relative overflow-hidden ${parsingError ? 'border-red-500 bg-red-500/5' : isRequired ? 'border-amber-500/50' : 'border-emerald-500/50'}`}>
-                                                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                                                                <div className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
-                                                                    <Sparkles className="w-4 h-4 text-emerald-500" /> AI Data Injection
-                                                                    {isRequired ? (
-                                                                        <span className="text-[10px] text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded ml-2 border border-amber-500/20 shadow-sm animate-pulse">REQUIRED CONFIGURATION</span>
-                                                                    ) : (
-                                                                        <span className="text-[10px] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded ml-2 border border-emerald-500/20 shadow-sm opacity-80">OPTIONAL CONFIGURATION</span>
-                                                                    )}
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const prompt = generateAIPrompt(analysis.title, analysis.description, analysis.questions, targetCount);
-                                                                        navigator.clipboard.writeText(prompt);
-                                                                        window.open('https://chatgpt.com', '_blank');
-                                                                        alert("System: Prompt copied to clipboard. Redirecting to ChatGPT for data synthesis.");
-                                                                    }}
-                                                                    className="gold-button px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-                                                                >
-                                                                    <ExternalLink className="w-4 h-4" /> Synchronize with ChatGPT
-                                                                </button>
-                                                            </div>
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                                                                <div className="space-y-4">
-                                                                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                                                                        <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                                            Protocol Instructions
-                                                                        </div>
-                                                                        <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                                                                            Execute the synchronized prompt in ChatGPT. Return with the generated JSON and paste it into the secure terminal interface.
-                                                                        </p>
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={handleAIInject}
-                                                                        className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 border border-emerald-400/20"
-                                                                    >
-                                                                        <Activity className="w-4 h-4" /> Inject Synthesized Data
-                                                                    </button>
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <textarea
-                                                                        value={aiPromptData}
-                                                                        onChange={(e) => {
-                                                                            setAiPromptData(e.target.value);
-                                                                            if (parsingError) setParsingError(null);
-                                                                        }}
-                                                                        placeholder='Paste JSON response here...'
-                                                                        className={`w-full h-full min-h-[150px] bg-[#020617] border-2 rounded-2xl p-4 text-xs text-white font-mono focus:outline-none transition-all resize-none shadow-inner ${parsingError ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-emerald-500/50'}`}
-                                                                    />
-                                                                    {parsingError && (
-                                                                        <div className="absolute bottom-4 right-4 text-[10px] text-red-400 font-bold bg-black/90 px-3 py-1.5 rounded-lg backdrop-blur border border-red-500/30 shadow-xl">
-                                                                            {parsingError}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* LIVE DATA MAPPING VISUALIZATION */}
-                                                            <div className="mt-4 pt-4 border-t border-white/5">
-                                                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-                                                                    <Activity className="w-3 h-3" /> Data Mapping Preview
-                                                                </div>
-                                                                <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar p-1">
-                                                                    {relevantTextFields.map((field) => {
-                                                                        let mappedValue: string | null = null;
-                                                                        try {
-                                                                            if (aiPromptData.trim()) {
-                                                                                const parsed = JSON.parse(aiPromptData);
-                                                                                // Try exact ID match first, then Title match
-                                                                                if (parsed[field.id]) mappedValue = Array.isArray(parsed[field.id]) ? parsed[field.id][0] : parsed[field.id];
-                                                                                else if (parsed[field.title]) mappedValue = Array.isArray(parsed[field.title]) ? parsed[field.title][0] : parsed[field.title];
-                                                                                // If array of objects? (Not standard for this simple logic but safe fallback)
-                                                                            }
-                                                                        } catch (e) { /* ignore parse errors for preview */ }
-
-                                                                        const isMapped = !!mappedValue;
-
-                                                                        return (
-                                                                            <div key={field.id} className={`flex items-center justify-between p-3 rounded-lg border ${isMapped ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/5'}`}>
-                                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isMapped ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-amber-500/50'}`} />
-                                                                                    <span className="text-[11px] font-medium text-slate-300 truncate max-w-[150px]" title={field.title}>
-                                                                                        {field.title}
-                                                                                        {field.required && <span className="ml-2 text-[9px] text-amber-500 bg-amber-500/10 px-1 rounded opacity-70">*</span>}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-2 max-w-[50%]">
-                                                                                    <ArrowRight className={`w-3 h-3 ${isMapped ? 'text-emerald-500' : 'text-slate-600'}`} />
-                                                                                    <span className={`text-[10px] font-mono truncate ${isMapped ? 'text-emerald-100' : 'text-slate-600 italic'}`}>
-                                                                                        {isMapped ? (mappedValue as string).substring(0, 30) + ((mappedValue as string).length > 30 ? '...' : '') : 'Pending data...'}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
-
-                                                {/* DATA PREVIEW / DEMOGRAPHICS */}
-                                                <div className="glass-panel p-1 rounded-xl flex flex-col h-[600px] border-t border-t-white/10 relative">
-                                                    <div className="absolute top-0 inset-x-0 bg-amber-500/10 border-b border-amber-500/10 p-2 flex items-center justify-center gap-2 text-[10px] text-amber-300 font-mono z-20 backdrop-blur-sm">
-                                                        <Activity className="w-3 h-3 text-amber-400" />
-                                                        <span>Data Synthesis & Distribution Control</span>
-                                                    </div>
-
-                                                    <div className="px-6 py-4 mt-12 border-b border-white/5 flex flex-col gap-4 bg-white/[0.02]">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Field Distributions</span>
-                                                            <div className="relative group">
-                                                                <Settings className="w-4 h-4 text-slate-600 group-hover:text-amber-500 transition-colors" />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex flex-col gap-3">
-                                                            <div className="relative">
-                                                                <Command className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Search fields (e.g. 'Age', 'Experience')..."
-                                                                    value={questionSearch}
-                                                                    onChange={(e) => setQuestionSearch(e.target.value)}
-                                                                    className="w-full bg-[#050505] border border-white/10 rounded-lg pl-9 pr-4 py-2 text-[10px] text-white font-mono focus:border-amber-500/50 outline-none transition-all"
-                                                                />
-                                                            </div>
-
-                                                            <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex items-start gap-3">
-                                                                <Settings className="w-4 h-4 text-amber-500 mt-0.5" />
-                                                                <p className="text-[10px] text-amber-200/70 leading-relaxed font-sans">
-                                                                    <strong>System Guidance:</strong> You may adjust the weightage percentages below to maintain a realistic distribution. Ensure the total for each field equals 100% for optimal consistency.
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                                                        {analysis.questions
-                                                            .filter(q => {
-                                                                if (!questionSearch) return true;
-                                                                return q.title.toLowerCase().includes(questionSearch.toLowerCase());
-                                                            })
-                                                            .map((q, qIdx) => {
-                                                                // Find original index for state updates
-                                                                const originalIdx = analysis.questions.findIndex(origQ => origQ.id === q.id);
-
-                                                                return (
-                                                                    <div key={q.id} className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors group">
-                                                                        <div className="flex justify-between items-start mb-3">
-                                                                            <span className="text-sm text-slate-200 font-medium max-w-[70%] group-hover:text-white transition-colors capitalize">{q.title}</span>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-[9px] bg-white/5 px-2 py-1 rounded text-slate-500 font-mono uppercase tracking-tighter opacity-60">{q.type}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Quick Actions */}
-                                                                        <div className="flex gap-2 mb-4">
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const newAnalysis = { ...analysis };
-                                                                                    const options = [...newAnalysis.questions[originalIdx].options];
-                                                                                    const equalWeight = Math.floor(100 / options.length);
-                                                                                    const remainder = 100 - (equalWeight * options.length);
-
-                                                                                    options.forEach((opt, i) => {
-                                                                                        options[i] = { ...opt, weight: equalWeight + (i === 0 ? remainder : 0) };
-                                                                                    });
-
-                                                                                    newAnalysis.questions[originalIdx].options = options;
-                                                                                    setAnalysis(newAnalysis);
-                                                                                }}
-                                                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500/20 transition-all active:scale-95"
-                                                                            >
-                                                                                <RotateCcw className="w-3 h-3" />
-                                                                                <span className="text-[9px] font-bold uppercase tracking-wider">Balance Evenly</span>
-                                                                            </button>
-                                                                        </div>
-
-                                                                        <div className="space-y-4">
-                                                                            {/* Text Fields: Manual Tag Input */}
-                                                                            {(q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH') && (
-                                                                                <div className="space-y-3">
-                                                                                    <div className="flex items-center justify-between">
-                                                                                        <div className="flex flex-col">
-                                                                                            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Manual Response Pool</span>
-                                                                                            <span className="text-[8px] text-slate-600 italic font-mono">Variants for: {q.title}</span>
-                                                                                        </div>
-                                                                                        <div className={`flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded border ${q.type === 'PARAGRAPH' ? 'text-emerald-500/80 bg-emerald-500/5 border-emerald-500/10' : 'text-amber-500/80 bg-amber-500/5 border-amber-500/10'}`}>
-                                                                                            <span className={`w-1 h-1 rounded-full animate-pulse ${q.type === 'PARAGRAPH' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                                                                            {q.type === 'PARAGRAPH' ? 'LONG FORM' : 'SMART CHIPS'}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <TagInput
-                                                                                        value={customResponses[q.id] || ''}
-                                                                                        onChange={(val) => setCustomResponses(prev => ({ ...prev, [q.id]: val }))}
-                                                                                        placeholder={q.type === 'PARAGRAPH' ? "Provide a sample paragraph..." : "Enter a response..."}
-                                                                                        isParagraph={q.type === 'PARAGRAPH'}
-                                                                                    />
-                                                                                    <p className="text-[9px] text-slate-500 italic opacity-60">
-                                                                                        {q.type === 'PARAGRAPH'
-                                                                                            ? "Generate rich, varied paragraphs. Use multiple variants to avoid detection."
-                                                                                            : "Add multiple unique responses. The AI will rotate through them to avoid duplicates."}
-                                                                                    </p>
-                                                                                </div>
-                                                                            )}
-
-                                                                            {/* Option Based Fields: Sliders */}
-                                                                            {q.options.length > 0 && q.options.slice(0, 10).map((opt, oIdx) => (
-                                                                                <div key={oIdx} className="space-y-1.5">
-                                                                                    {/* Option name and percentage */}
-                                                                                    <div className="flex items-center justify-between text-[11px]">
-                                                                                        <span className="text-slate-400 truncate max-w-[70%]" title={opt.value}>{opt.value}</span>
-                                                                                        <span className="text-amber-400 font-mono font-bold text-xs tabular-nums">{opt.weight || 0}%</span>
-                                                                                    </div>
-
-                                                                                    {/* Interactive slider */}
-                                                                                    <div className="relative group/slider">
-                                                                                        <input
-                                                                                            type="range"
-                                                                                            min="0"
-                                                                                            max="100"
-                                                                                            value={opt.weight || 0}
-                                                                                            onChange={(e) => {
-                                                                                                const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                                                                                const newAnalysis = { ...analysis };
-                                                                                                const options = [...newAnalysis.questions[originalIdx].options];
-
-                                                                                                // 1. Update the target option
-                                                                                                options[oIdx] = { ...options[oIdx], weight: val };
-
-                                                                                                // 2. Proportional redistribution
-                                                                                                const remaining = 100 - val;
-                                                                                                const otherIndices = options.map((_, i) => i).filter(i => i !== oIdx);
-
-                                                                                                if (otherIndices.length > 0) {
-                                                                                                    const sumOthers = otherIndices.reduce((sum, i) => sum + (options[i].weight || 0), 0);
-
-                                                                                                    if (sumOthers > 0) {
-                                                                                                        // Redistribute proportionally
-                                                                                                        otherIndices.forEach(i => {
-                                                                                                            options[i] = {
-                                                                                                                ...options[i],
-                                                                                                                weight: Math.round((options[i].weight / sumOthers) * remaining)
-                                                                                                            };
-                                                                                                        });
-                                                                                                    } else {
-                                                                                                        // Redistribute equally if others are 0
-                                                                                                        const equalShare = Math.floor(remaining / otherIndices.length);
-                                                                                                        otherIndices.forEach(i => {
-                                                                                                            options[i] = { ...options[i], weight: equalShare };
-                                                                                                        });
-                                                                                                    }
-
-                                                                                                    // 3. Normalization (Fix rounding errors)
-                                                                                                    const currentSum = options.reduce((sum, opt) => sum + (opt.weight || 0), 0);
-                                                                                                    const diff = 100 - currentSum;
-                                                                                                    if (diff !== 0) {
-                                                                                                        // Add/Subtract difference from the first "other" option that isn't the one we changed
-                                                                                                        const adjustmentIdx = otherIndices[0];
-                                                                                                        options[adjustmentIdx] = {
-                                                                                                            ...options[adjustmentIdx],
-                                                                                                            weight: Math.max(0, (options[adjustmentIdx].weight || 0) + diff)
-                                                                                                        };
-                                                                                                    }
-                                                                                                }
-
-                                                                                                newAnalysis.questions[originalIdx].options = options;
-                                                                                                setAnalysis(newAnalysis);
-                                                                                            }}
-                                                                                            className="w-full h-2 bg-slate-800/50 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400 transition-all"
-                                                                                            style={{
-                                                                                                background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${opt.weight}%, rgb(30 41 59 / 0.5) ${opt.weight}%, rgb(30 41 59 / 0.5) 100%)`
-                                                                                            }}
-                                                                                        />
-                                                                                        {/* Visual indicator bar underneath */}
-                                                                                        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white/5 rounded-full overflow-hidden pointer-events-none">
-                                                                                            <div
-                                                                                                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-300"
-                                                                                                style={{ width: `${opt.weight}%` }}
-                                                                                            />
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-
-                                                                            {(q.type === 'MULTIPLE_CHOICE' || q.type === 'CHECKBOXES' || q.type === 'DROPDOWN') && (
-                                                                                <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-3">
-                                                                                    <span className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Total Distribution</span>
-                                                                                    <span className={`text-[11px] font-mono font-bold px-2 py-1 rounded ${q.options.reduce((a, b) => a + (b.weight || 0), 0) === 100
-                                                                                        ? 'text-emerald-400 bg-emerald-500/10'
-                                                                                        : 'text-red-400 bg-red-500/10'
-                                                                                        }`}>
-                                                                                        {q.options.reduce((a, b) => a + (b.weight || 0), 0)}%
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
+                                    <Step2Dashboard
+                                        analysis={analysis}
+                                        setAnalysis={setAnalysis}
+                                        user={user}
+                                        targetCount={targetCount}
+                                        setTargetCount={setTargetCount}
+                                        speedMode={speedMode}
+                                        setSpeedMode={setSpeedMode}
+                                        delayMin={delayMin}
+                                        setDelayMin={setDelayMin}
+                                        nameSource={nameSource}
+                                        setNameSource={setNameSource}
+                                        customNamesRaw={customNamesRaw}
+                                        setCustomNamesRaw={setCustomNamesRaw}
+                                        customResponses={customResponses}
+                                        setCustomResponses={setCustomResponses}
+                                        aiPromptData={aiPromptData}
+                                        setAiPromptData={setAiPromptData}
+                                        parsingError={parsingError}
+                                        setParsingError={setParsingError}
+                                        handleCompile={handleCompile}
+                                        handleAIInject={handleAIInject}
+                                        reset={reset}
+                                        setShowPricing={setShowPricing}
+                                        setShowRecommendationModal={setShowRecommendationModal}
+                                        checkBalanceAndRedirect={checkBalanceAndRedirect}
+                                        isLaunching={isLaunching}
+                                        error={error || null}
+                                    />
                                 )}
 
                                 {/* STEP 3: MISSION CONTROL */}

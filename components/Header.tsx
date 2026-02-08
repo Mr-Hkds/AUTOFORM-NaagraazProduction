@@ -13,7 +13,7 @@ interface HeaderProps {
     onDashboardClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, onShowPricing, onSignInClick, onDashboardClick }) => {
+const Header: React.FC<HeaderProps> = React.memo(({ reset, step, user, loading, onLogout, onShowPricing, onSignInClick, onDashboardClick }) => {
     return (
         <header className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6 flex justify-center pointer-events-none">
             <div className="w-full max-w-6xl glass-panel-premium backdrop-blur-xl bg-[#030303]/80 border border-white/5 shadow-2xl rounded-2xl md:rounded-full px-4 md:px-6 py-3 flex items-center justify-between pointer-events-auto transition-all duration-300 hover:border-white/10 hover:bg-[#050505]/90">
@@ -123,6 +123,6 @@ const Header: React.FC<HeaderProps> = ({ reset, step, user, loading, onLogout, o
             </div>
         </header>
     );
-};
+});
 
 export default Header;

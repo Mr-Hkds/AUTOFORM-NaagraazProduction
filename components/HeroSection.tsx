@@ -11,7 +11,7 @@ interface HeroSectionProps {
     onShowPricing?: () => void;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWatchDemo, loading, user, onShowPricing }) => {
+const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAnalyze, onWatchDemo, loading, user, onShowPricing }) => {
     return (
         <section className="flex-1 flex flex-col items-center justify-center w-full max-w-[100vw] overflow-hidden animate-fade-in-up px-4 sm:px-6 relative z-10 min-h-[85vh] py-20 md:py-32">
 
@@ -212,6 +212,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ url, setUrl, onAnalyze, onWat
             </div>
         </section>
     );
-};
+});
 
 export default HeroSection;
