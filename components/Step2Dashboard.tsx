@@ -435,13 +435,19 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                             Protocol Instructions
                                         </div>
-                                        <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
-                                    1. Click Synchronise with ChatGPT (prompt is auto-copied).
-2. Paste the prompt into ChatGPT and run it.
-3. Copy the generated JSON exactly.
-4. Paste it into the box below.
-5. Click Inject Synthesized Data to process the data.
-                                        </p>
+                                       <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+  Follow these steps carefully:
+  <br />
+  1. Click <strong>Synchronise with ChatGPT</strong> — the prompt is copied automatically.
+  <br />
+  2. Paste the prompt into ChatGPT and run it.
+  <br />
+  3. Copy the generated JSON exactly as provided.
+  <br />
+  4. Paste the JSON into the input box below.
+  <br />
+  5. Click <strong>Inject Synthesized Data</strong> to process the data.
+</p>
                                     </div>
                                     <button
                                         onClick={handleAIInject}
