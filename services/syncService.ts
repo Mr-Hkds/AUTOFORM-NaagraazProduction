@@ -12,30 +12,32 @@ interface PendingPayment {
 /**
  * Persist a failed payment verification for later retry
  */
-const storage = (window as any).storage;
-if (!storage) {
-    console.warn("[SyncService] window.storage is not available. Verification skipping persistence.");
-    return;
-}
+export const savePendingPayment = async (paymentId: string, amount: number, userId: string) => {
+    try {
+        const storage = (window as any).storage;
+        if (!storage) {
+            console.warn("[SyncService] window.storage is not available. Verification skipping persistence.");
+            return;
+        }
 
-const existingRaw = await storage.get(PENDING_PAYMENTS_KEY);
-const existing: PendingPayment[] = existingRaw ? JSON.parse(existingRaw) : [];
+        const existingRaw = await storage.get(PENDING_PAYMENTS_KEY);
+        const existing: PendingPayment[] = existingRaw ? JSON.parse(existingRaw) : [];
 
-// Avoid duplicates
-if (existing.some(p => p.paymentId === paymentId)) return;
+        // Avoid duplicates
+        if (existing.some(p => p.paymentId === paymentId)) return;
 
-const updated = [...existing, {
-    paymentId,
-    amount,
-    userId,
-    timestamp: Date.now()
-}];
+        const updated = [...existing, {
+            paymentId,
+            amount,
+            userId,
+            timestamp: Date.now()
+        }];
 
-await (window as any).storage.set(PENDING_PAYMENTS_KEY, JSON.stringify(updated));
-console.log(`[SyncService] Saved pending payment: ${paymentId}`);
+        await storage.set(PENDING_PAYMENTS_KEY, JSON.stringify(updated));
+        console.log(`[SyncService] Saved pending payment: ${paymentId}`);
     } catch (error) {
-    console.error("[SyncService] Failed to save pending payment:", error);
-}
+        console.error("[SyncService] Failed to save pending payment:", error);
+    }
 };
 
 /**
