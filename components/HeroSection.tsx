@@ -7,11 +7,12 @@ interface HeroSectionProps {
     onAnalyze: () => void;
     onWatchDemo: () => void;
     loading: boolean;
+    version: string;
     user?: import('../types').User | null;
     onShowPricing?: () => void;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAnalyze, onWatchDemo, loading, user, onShowPricing }) => {
+const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAnalyze, onWatchDemo, loading, version, user, onShowPricing }) => {
     return (
         <section className="flex-1 flex flex-col items-center justify-center w-full max-w-[100vw] overflow-hidden animate-fade-in-up px-4 sm:px-6 relative z-10 min-h-[85vh] py-20 md:py-32">
 
@@ -190,7 +191,7 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
 
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.2em]">
-                                V4.0.0 <span className="text-slate-600">STABLE</span>
+                                {version} <span className="text-slate-600">STABLE</span>
                             </span>
                         </div>
                     </div>

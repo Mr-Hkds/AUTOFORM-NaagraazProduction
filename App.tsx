@@ -245,7 +245,7 @@ const Footer = React.memo(({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'ter
             {/* Version System Tag */}
             <div className="absolute bottom-2 right-4 opacity-80 hover:opacity-100 transition-opacity">
                 <span className="text-[9px] text-slate-500 font-mono tracking-[0.2em] uppercase">
-                    Build 4.0.2 STABLE
+                    Build {VERSION} STABLE
                 </span>
             </div>
         </div>
@@ -579,8 +579,7 @@ function App() {
         }
     }, [analysis]);
 
-    // ... (handleCopy logic update)
-    // ... (handleCopy logic update)
+
     const handleCopy = async (overrides?: Record<string, string>): Promise<boolean> => {
         if (!analysis || !user) return false;
 
@@ -1397,6 +1396,7 @@ function App() {
                                         onAnalyze={handleAnalyze}
                                         onWatchDemo={() => setShowVideoModal(true)}
                                         loading={loading}
+                                        version={VERSION}
                                         user={user}
                                         onShowPricing={() => setShowPricing(true)}
                                     />
