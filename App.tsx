@@ -235,8 +235,8 @@ const Footer = React.memo(({ onLegalNav }: { onLegalNav: (type: 'privacy' | 'ter
 
                     {/* Signature Text */}
                     <MatrixReveal
-                        text="MR. HARKAMAL"
-                        className="relative z-10 text-lg md:text-xl font-bold liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+                        text="BLACK_LOTUS"
+                    className="relative z-10 text-lg md:text-xl font-bold liquid-gold-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
                     />
                 </div>
             </div>
