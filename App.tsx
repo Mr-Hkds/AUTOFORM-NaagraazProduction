@@ -297,6 +297,7 @@ function App() {
         return localStorage.getItem('NAAGRAAZ_ACCESS_KEY') === 'root-access';
     });
     const [accessKeyInput, setAccessKeyInput] = useState('');
+    const [accessError, setAccessError] = useState(false);
     // REMOVED EXTENSION DETECTION - NOW USING SYSTEM NATIVE ENGINE
     const isExtensionInstalled = false; // Forced false to bypass logic
     const [stopAutomation, setStopAutomation] = useState(false);
@@ -1312,8 +1313,10 @@ function App() {
             if (accessKeyInput === 'root-access') {
                 localStorage.setItem('NAAGRAAZ_ACCESS_KEY', 'root-access');
                 setIsSiteUnlocked(true);
+                setAccessError(false);
             } else {
                 setAccessKeyInput('');
+                setAccessError(true);
             }
         };
         return (
@@ -1362,12 +1365,20 @@ function App() {
                                 type="password"
                                 placeholder="Authorization Key"
                                 value={accessKeyInput}
-                                onChange={(e) => setAccessKeyInput(e.target.value)}
+                                onChange={(e) => {
+                                    setAccessKeyInput(e.target.value);
+                                    if (accessError) setAccessError(false);
+                                }}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
-                                className="w-full bg-[#050505] border border-slate-800 focus:border-red-500/50 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-red-500/50 placeholder:text-slate-600 text-sm transition-all text-center tracking-widest relative z-10"
+                                className={`w-full bg-[#050505] border ${accessError ? 'border-red-500 text-red-100 placeholder:text-red-900 focus:ring-red-500/80' : 'border-slate-800 text-white placeholder:text-slate-600 focus:border-red-500/50 focus:ring-red-500/50'} rounded-lg px-4 py-3 focus:outline-none focus:ring-1 text-sm transition-all text-center tracking-widest relative z-10`}
                                 autoFocus
                                 autoComplete="off"
                             />
+                            {accessError && (
+                                <p className="text-red-500 text-xs text-center mt-3 font-mono tracking-wider animate-pulse">
+                                    // ERROR: UNAUTHORIZED CREDENTIALS
+                                </p>
+                            )}
                         </div>
                         <button
                             onClick={handleUnlock}

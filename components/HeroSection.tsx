@@ -197,19 +197,7 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
                     </div>
                 </div>
 
-                {/* Trust Indicator - Moved to Bottom */}
-                <div className="mt-12 flex justify-center opacity-0 fill-mode-forwards animate-fade-in" style={{ animationDelay: '800ms' }}>
-                    <div className="relative group flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.02] overflow-hidden">
-                        {/* Green Shimmer Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-shimmer-flow pointer-events-none" />
 
-                        {/* Content */}
-                        <ShieldCheck className="w-3 h-3 text-emerald-500 relative z-10" />
-                        <span className="text-[9px] text-emerald-100/80 font-mono uppercase tracking-[0.2em] relative z-10">
-                            Secured Payment via <span className="font-bold text-emerald-400">Razorpay</span>
-                        </span>
-                    </div>
-                </div>
             </div>
         </section>
     );
