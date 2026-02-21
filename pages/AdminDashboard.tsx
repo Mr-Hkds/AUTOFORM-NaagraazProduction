@@ -300,7 +300,7 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 animate-fade-in-up">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12 animate-fade-in-up w-full">
             {/* Mobile-Optimized Header */}
             <div className="mb-6 sm:mb-8">
                 <div className="flex items-center justify-between mb-4">
@@ -438,7 +438,7 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-0 max-h-[600px]">
+                <div className="flex-1 overflow-x-auto p-0 max-h-[600px] w-full">
                     {loadingRequests && filteredRequests.length === 0 ? (
                         <div className="p-12 text-center flex flex-col items-center">
                             <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin mb-4" />
@@ -548,7 +548,7 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
             {/* User List Modal */}
             {showUsersModal && (
                 <div className="fixed inset-0 z-[150] flex items-start justify-center pt-20 p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
-                    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 w-full max-w-5xl flex flex-col shadow-2xl mb-20">
+                    <div className="bg-[#0a0a0a] rounded-xl border border-white/10 w-full max-w-5xl flex flex-col shadow-2xl mb-20 relative mx-auto">
                         <div className="p-6 border-b border-white/10 space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -597,7 +597,7 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-auto p-0">
+                        <div className="flex-1 overflow-x-auto p-0 w-full">
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-white/5 sticky top-0 backdrop-blur-sm z-10 text-xs font-bold text-slate-400 uppercase tracking-wider">
                                     <tr>
