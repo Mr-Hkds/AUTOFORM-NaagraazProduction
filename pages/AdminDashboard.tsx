@@ -7,7 +7,6 @@ import { CheckCircle, XCircle, Clock, ShieldCheck, ArrowLeft, ArrowRight, Users,
 const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) => {
     const [loading, setLoading] = useState(true);
     const [totalUsers, setTotalUsers] = useState(0);
-    const [totalTokensUsed, setTotalTokensUsed] = useState(0);
 
     // User Management State
     const [showUsersModal, setShowUsersModal] = useState(false);
@@ -59,13 +58,6 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
         try {
             const usersSnapshot = await getDocs(collection(db, 'users'));
             setTotalUsers(usersSnapshot.size);
-
-            let tokensUsed = 0;
-            usersSnapshot.forEach(doc => {
-                const u = doc.data() as User;
-                tokensUsed += (u.responsesUsed || 0);
-            });
-            setTotalTokensUsed(tokensUsed);
         } catch (e) {
             console.error('Failed to fetch data:', e);
         }
@@ -398,14 +390,14 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
                         onClick={handleToggleSiteLock}
                         disabled={lockLoading || lockToggling}
                         className={`relative w-14 h-7 rounded-full transition-all duration-300 focus:outline-none focus:ring-4 disabled:opacity-50 ${siteLocked
-                                ? 'bg-red-500/30 focus:ring-red-500/20'
-                                : 'bg-emerald-500/30 focus:ring-emerald-500/20'
+                            ? 'bg-red-500/30 focus:ring-red-500/20'
+                            : 'bg-emerald-500/30 focus:ring-emerald-500/20'
                             }`}
                     >
                         <span
                             className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full transition-all duration-300 shadow-lg ${siteLocked
-                                    ? 'translate-x-0 bg-red-500'
-                                    : 'translate-x-7 bg-emerald-500'
+                                ? 'translate-x-0 bg-red-500'
+                                : 'translate-x-7 bg-emerald-500'
                                 }`}
                         />
                     </button>
@@ -413,29 +405,7 @@ const AdminDashboard = ({ user, onBack }: { user: User; onBack: () => void }) =>
             </div>
 
             {/* Stats Check - KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
-                {/* TOKENS USED CARD */}
-                <div className="glass-panel p-6 sm:p-8 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent relative overflow-hidden group text-left transition-all hover:scale-[1.01] hover:shadow-2xl hover:shadow-emerald-900/20">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Activity className="w-24 h-24 text-emerald-500" />
-                    </div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2 text-emerald-400">
-                            <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                <Activity className="w-6 h-6" />
-                            </div>
-                            <span className="text-sm font-bold uppercase tracking-widest">Tokens Consumed</span>
-                        </div>
-                        <div className="text-4xl sm:text-5xl font-bold text-white mb-2 tracking-tight">
-                            {loading ? <RefreshCw className="w-8 h-8 animate-spin" /> : totalTokensUsed.toLocaleString()}
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400 text-sm group-hover:text-emerald-300 transition-colors">
-                            <span>Platform Wide Usage</span>
-                            <Activity className="w-4 h-4" />
-                        </div>
-                    </div>
-                </div>
-
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-8 sm:mb-12">
                 {/* USERS CARD */}
                 <button
                     onClick={fetchAllUsers}
