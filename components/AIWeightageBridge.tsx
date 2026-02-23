@@ -49,20 +49,80 @@ export default function AIWeightageBridge({ questions, onApplyWeightages, onClos
             return base;
         });
 
-        const prompt = `Act as a data analyst simulating survey responses for a form titled "${questions[0]?.title || 'Survey'}".
-I will provide a JSON array of questions.
+        // Detect form context clues for smarter prompting
+        const allTitles = questions.map(q => q.title.toLowerCase()).join(' | ');
+        const allOptions = questions.flatMap(q => q.options.map(o => o.value.toLowerCase())).join(' | ');
+        const combinedContext = allTitles + ' ' + allOptions;
 
-REQUIREMENTS:
-1. For questions with 'options' (MULTIPLE_CHOICE, CHECKBOXES, DROPDOWN): Assign realistic distribution percentages (weightages) to each option based on human behavior. Weights MUST sum exactly to 100.
-2. For text-based questions (SHORT_ANSWER, PARAGRAPH): Provide an array of 5-8 diverse, realistic sample responses.
-3. If it's a "Name" field, provide appropriate full names.
+        const isIndianContext = /₹|rupee|inr|lakh|crore|india|hindi|delhi|mumbai|kolkata|chennai|bangalore|hyderabad|pune/.test(combinedContext);
+        const hasAgeQuestion = /\bage\b|age group|age range|how old/.test(allTitles);
+        const hasProfessionQuestion = /profession|occupation|employment|job|work|designation|working/.test(allTitles);
+        const hasIncomeQuestion = /income|salary|earn|earning|stipend|pocket money|monthly|annual|ctc/.test(allTitles);
+        const hasEducationQuestion = /education|qualification|degree|class|standard|studying|school|college|university/.test(allTitles);
 
-Format the output as a JSON array of objects, each containing:
+        const prompt = `You are a statistical data analyst creating REALISTIC survey response distributions for a form titled "${questions[0]?.title || 'Survey'}".
+
+I will provide a JSON array of questions. Your job is to assign weight distributions and text samples that look like REAL human responses — not robotic or evenly-spread.
+
+═══════════════════════════════════════
+CORE RULES
+═══════════════════════════════════════
+1. For questions with 'options' (MULTIPLE_CHOICE, CHECKBOXES, DROPDOWN): Assign weight percentages that sum EXACTLY to 100. Use realistic bell-curve-like distributions — most real surveys cluster around 2-3 dominant options, not spread evenly.
+2. For text-based questions (SHORT_ANSWER, PARAGRAPH): Provide 8-12 diverse sample responses with VARIED length, tone, and phrasing. Some should be brief, some detailed. Include natural imperfections (casual language, abbreviations).
+3. If it's a "Name" field, provide realistic full names.${isIndianContext ? ' Use Indian names (mix of regions — North, South, East, West India).' : ''}
+
+═══════════════════════════════════════
+COMMON-SENSE CROSS-QUESTION LOGIC (CRITICAL)
+═══════════════════════════════════════
+Think about the questions TOGETHER, not in isolation. Apply these real-world rules:
+
+${hasAgeQuestion && hasProfessionQuestion ? `AGE ↔ PROFESSION:
+- Under 18 → CANNOT be "Working Professional", "Business Owner", "Self-employed", "Manager", etc. They are STUDENTS (school-age). Weight student/school options to 90%+.
+- 18-24 → Mostly college students, interns, freshers. Working professionals should be LOW (~15-25%).
+- 25-35 → Primarily working professionals. Student weight should be LOW (~5-10%).
+- 55+ or "Senior Citizen" → Mostly retired. Working professional should be LOW.
+` : ''}
+${hasAgeQuestion && hasIncomeQuestion ? `AGE ↔ INCOME:
+- Under 18 → They earn NOTHING or very minimal pocket money. Any income option above ₹10,000-15,000/month (or equivalent) should get near-ZERO weight. "No income" or lowest bracket should dominate (80%+).
+- 18-24 (students) → Mostly no income or low income (internship stipends, part-time). High income brackets (50,000+) should be very rare (<5%).
+- 25-35 → Middle-income brackets should dominate. High income is possible but not majority.
+- 55+ → Pension-range income, moderate brackets.
+` : ''}
+${hasProfessionQuestion && hasIncomeQuestion ? `PROFESSION ↔ INCOME:
+- Students → No income or very low income. CANNOT have professional-level salary.
+- Homemakers/Unemployed → No income or dependent income.
+- Entry-level/Fresher → Low to mid income only.
+- Senior roles/Business owners → Can have higher income brackets.
+` : ''}
+${hasEducationQuestion && hasProfessionQuestion ? `EDUCATION ↔ PROFESSION:
+- School-level education (10th/12th) → Cannot be "Senior Manager", "Director", etc.
+- PhD/Post-graduate → Unlikely to be "Unemployed" (low weight, not zero).
+` : ''}
+${hasAgeQuestion && hasEducationQuestion ? `AGE ↔ EDUCATION:
+- Under 18 → Maximum education is "School" or "12th grade". CANNOT have Bachelor's, Master's, PhD.
+- 18-24 → Mostly "Pursuing graduation" or "Graduate". Post-grad is possible but rare.
+- 35+ → Higher chance of post-graduation, professional degrees.
+` : ''}
+
+GENERAL REALISM RULES:
+- Most people rate satisfaction/experience as 3-4 out of 5 (not 5/5).
+- "Yes/No" questions usually lean 55-65% toward "Yes" (acquiescence bias).
+- "Other" or "Prefer not to say" options should always get LOW weight (2-8%).
+- Don't give any option exactly 0% weight unless it's truly impossible.
+- Gender distributions should roughly mirror real demographics (~48/48/4 for M/F/Other).
+${isIndianContext ? `- This appears to be an INDIAN survey. Use Indian-relevant distributions for income (₹ brackets), education (10th, 12th, B.Tech, MBA, etc.), and cultural context.` : ''}
+
+═══════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════
+Return a JSON array of objects:
 - 'id': (string) the original question id
 - 'options': (array of objects, ONLY for selection fields) { "value": string, "weight": number }
-- 'samples': (array of strings, ONLY for text fields) [ "Sample 1", "Sample 2", ... ]
+- 'samples': (array of strings, ONLY for text fields) diverse realistic responses
 
-IMPORTANT: Return ONLY valid JSON. No markdown code blocks, no intro/outro text. Just the raw JSON array.\n\n${JSON.stringify(promptData, null, 2)}`;
+IMPORTANT: Return ONLY valid JSON. No markdown code blocks, no explanation, no intro/outro text. Just the raw JSON array.
+
+${JSON.stringify(promptData, null, 2)}`;
 
         try {
             await navigator.clipboard.writeText(prompt);

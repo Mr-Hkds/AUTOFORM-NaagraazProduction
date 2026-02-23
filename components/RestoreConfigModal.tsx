@@ -102,7 +102,9 @@ const RestoreConfigModal: React.FC<RestoreConfigModalProps> = ({ config, onResto
                                             <Sparkles className="w-3 h-3" />
                                             Custom Weights
                                         </span>
-                                        <span className="text-xs text-emerald-400 font-mono font-bold">{weightCount} fields</span>
+                                        <span className="text-xs text-emerald-400 font-mono font-bold">
+                                            {config.aiApplied ? 'AI Optimized' : `${weightCount} fields`}
+                                        </span>
                                     </div>
                                 </>
                             )}

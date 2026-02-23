@@ -279,6 +279,10 @@ function App() {
     const [tokenRequestMessage, setTokenRequestMessage] = useState('');
     const [showLogin, setShowLogin] = useState(false);
 
+    // Step2Dashboard state
+    const [dashboardInitialStep, setDashboardInitialStep] = useState<1 | 2 | 3 | 4>(1);
+    const [dashboardAiApplied, setDashboardAiApplied] = useState(false);
+
     // Check for pending requests when modal opens
     useEffect(() => {
         const checkExisting = async () => {
@@ -345,6 +349,7 @@ function App() {
     const [customNamesRaw, setCustomNamesRaw] = useState('');
     const [speedMode, setSpeedMode] = useState<'auto' | 'manual'>('auto');
     const [isLaunching, setIsLaunching] = useState(false);
+    const [transitionPhase, setTransitionPhase] = useState<'idle' | 'exiting'>('idle');
     const [launchProgress, setLaunchProgress] = useState(0);
     const launchFrameRef = useRef<number | null>(null);
     const launchStepTimerRef = useRef<number | null>(null);
@@ -505,8 +510,23 @@ function App() {
 
         clearLaunchSequence();
         setLaunchProgress(100);
+
+        // Phase 1: Mount Step 3 behind the OVERLAY
         setStep(3);
+
+        // Phase 2: Give the browser 60ms to finish React mounting, layout calc, and painting.
+        // This ensures the main thread is completely idle when the opacity animation starts.
+        await new Promise(r => setTimeout(r, 60));
+
+        // Phase 3: Start exit animation on the overlay
+        setTransitionPhase('exiting');
+
+        // Phase 4: Wait for overlay fade-out animation to finish (500ms CSS + 50ms buffer)
+        await new Promise(r => setTimeout(r, 550));
+
+        // Phase 3: Clean up — remove overlay entirely
         setIsLaunching(false);
+        setTransitionPhase('idle');
 
         try {
             await handleAutoRun(launchPayloadRef.current);
@@ -1007,7 +1027,7 @@ function App() {
 
             // --- DETERMINISTIC DECK GENERATION (EXACT PERCENTAGE ADHERENCE) ---
             // We pre-calculate the exact answers for the entire batch to ensure math perfect distribution
-            const questionDecks: Record<string, string[]> = {};
+            const unassignedDecks: Record<string, string[]> = {};
 
             analysis.questions.forEach(q => {
                 if ((q.type === 'MULTIPLE_CHOICE' || q.type === 'DROPDOWN' || q.type === 'CHECKBOXES' || q.type === 'LINEAR_SCALE') && q.options.length > 0) {
@@ -1045,15 +1065,174 @@ function App() {
                         }
                     });
 
-                    // Shuffle the deck (Fisher-Yates)
+                    // Base shuffle
                     for (let i = deck.length - 1; i > 0; i--) {
                         const j = Math.floor(Math.random() * (i + 1));
                         [deck[i], deck[j]] = [deck[j], deck[i]];
                     }
 
-                    questionDecks[q.id] = deck;
+                    unassignedDecks[q.id] = deck;
                 }
             });
+
+            // --- SMART DEMOGRAPHIC ALIGNMENT ENGINE ---
+            const alignedDecks: Record<string, string[]> = {};
+
+            // Detect relevant question IDs by title keywords
+            const ageQId = analysis.questions.find(q =>
+                /\bage\b|age.?group|age.?range|how old/i.test(q.title) && unassignedDecks[q.id]
+            )?.id;
+            const profQId = analysis.questions.find(q =>
+                /profession|occupation|employment|job\b|work|designation|working|career/i.test(q.title) && unassignedDecks[q.id]
+            )?.id;
+            const incomeQId = analysis.questions.find(q =>
+                /income|salary|earn|earning|stipend|pocket.?money|monthly|annual|ctc|pay/i.test(q.title) && unassignedDecks[q.id]
+            )?.id;
+            const eduQId = analysis.questions.find(q =>
+                /education|qualification|degree|class|standard|studying|school|college|university/i.test(q.title) && unassignedDecks[q.id]
+            )?.id;
+
+            const hasDemographics = ageQId || profQId || incomeQId || eduQId;
+
+            if (hasDemographics) {
+                const parseAge = (v: string) => {
+                    if (/under.?18|below.?18|<\s*18|13.?17|14.?17|15.?17|less than 18|minor|child/i.test(v)) return 15;
+                    if (/18.?2[0-5]|18.?to.?2[0-5]|19.?24|18.?24|20.?25/i.test(v)) return 21;
+                    if (/2[5-9].?3[0-5]|25.?34|26.?35|2[0-9]|3[0-9]/i.test(v)) return 29;
+                    if (/3[5-9].?4[0-5]|35.?44|36.?45/i.test(v)) return 39;
+                    if (/4[5-9].?5[0-5]|45.?54|46.?55/i.test(v)) return 49;
+                    if (/above|older|65\+|60\+|55\+/i.test(v)) return 60;
+                    return 30; // default adult
+                };
+
+                const getProfType = (v: string) => {
+                    if (/student|school|college|studying|learner|pupil|intern|fresher/i.test(v)) return 'student';
+                    if (/retire|pension|senior.?citizen/i.test(v)) return 'retired';
+                    if (/unemploy|not working|jobless|homemaker|housewife/i.test(v)) return 'unemployed';
+                    if (/business|self.?employ|entrepreneur|freelance/i.test(v)) return 'business';
+                    if (/working|professional|employed|job|manager|director|executive|engineer|doctor|lawyer/i.test(v)) return 'employed';
+                    return 'other';
+                };
+
+                const getIncomeLevel = (v: string) => {
+                    if (/no.?income|none|zero|nil|below.?5|under.?5|0.?to|less.?than.?10|pocket.?money|below.?10|under.?10|0.?5/i.test(v)) return 0;
+                    if (/10.?20|10.?30|15.?25|10[\s,]*000/i.test(v)) return 15000;
+                    if (/20.?30|30.?40|30.?50|25.?50|30[\s,]*000/i.test(v)) return 35000;
+                    if (/50[\s,]*000|60[\s,]*000|70[\s,]*000|80[\s,]*000|90[\s,]*000/i.test(v)) return 70000;
+                    if (/1[\s,]*00[\s,]*000|1[\s,]*lakh|above.?1|more than 1/i.test(v)) return 150000;
+                    if (/above.?50|more than 50/i.test(v)) return 60000;
+                    return -1; // unknown
+                };
+
+                const getEduLevel = (v: string) => {
+                    if (/school|10th|12th|high.?school|secondary|ssc|hsc|class.?[0-9]|intermediate/i.test(v)) return 10;
+                    if (/bachelor|degree|b\.?tech|b\.?sc|b\.?com|b\.?a|bba|undergrad/i.test(v)) return 15;
+                    if (/master|phd|doctorate|post.?grad|m\.?tech|m\.?sc|mba|m\.?a\b|m\.?com|m\.?ed/i.test(v)) return 18;
+                    return 12; // unknown
+                };
+
+                const calcScore = (age?: number, prof?: string, inc?: number, edu?: number) => {
+                    let score = 0;
+                    if (age !== undefined && prof !== undefined) {
+                        if (age < 18 && (prof === 'employed' || prof === 'business')) score -= 10000;
+                        if (age < 18 && prof === 'student') score += 5000;
+                        if (age > 60 && prof === 'retired') score += 5000;
+                        if (age < 40 && prof === 'retired') score -= 10000;
+                        if (age >= 35 && prof === 'student') score -= 10000;
+                        if (age >= 25 && age < 35 && prof === 'student') score -= 2000; // plausible but less ideal than younger
+                    }
+                    if (age !== undefined && inc !== undefined && inc !== -1) {
+                        if (age < 18 && inc > 20000) score -= 10000;
+                        if (age < 18 && inc === 0) score += 5000;
+                        if (age > 30 && inc === 0) score -= 2000;
+                        if (age >= 25 && age <= 45 && inc > 20000) score += 1000;
+                    }
+                    if (prof !== undefined && inc !== undefined && inc !== -1) {
+                        if (prof === 'student' && inc > 30000) score -= 10000;
+                        if (prof === 'student' && inc === 0) score += 2000;
+                        if (prof === 'unemployed' && inc > 10000) score -= 10000;
+                        if ((prof === 'employed' || prof === 'business') && inc > 0) score += 5000;
+                        if ((prof === 'employed' || prof === 'business') && inc === 0) score -= 8000;
+                    }
+                    if (age !== undefined && edu !== undefined) {
+                        if (age < 18 && edu > 12) score -= 10000;
+                        if (age < 21 && edu > 15) score -= 10000;
+                        if (age > 24 && edu > 12) score += 1000;
+                    }
+                    if (prof !== undefined && edu !== undefined) {
+                        if (prof === 'student' && edu > 15) score -= 2000; // most students are school/undergrad
+                        if (prof === 'unemployed' && edu > 15) score -= 1000; // happens, but penalize slightly
+                    }
+                    return score;
+                };
+
+                // Anchor on Age (most constraining), then Prof, then Edu, then Income
+                const anchorId = ageQId || profQId || eduQId || incomeQId;
+
+                if (anchorId) {
+                    alignedDecks[anchorId] = [...unassignedDecks[anchorId]];
+                }
+
+                const demoFields = [ageQId, profQId, eduQId, incomeQId].filter(id => id && id !== anchorId) as string[];
+
+                demoFields.forEach(fieldId => {
+                    alignedDecks[fieldId] = new Array(targetCount).fill("");
+                    const remainingOptions = [...unassignedDecks[fieldId]];
+
+                    for (let row = 0; row < targetCount; row++) {
+                        const curAge = ageQId && alignedDecks[ageQId] ? alignedDecks[ageQId][row] : undefined;
+                        const curProf = profQId && alignedDecks[profQId] ? alignedDecks[profQId][row] : undefined;
+                        const curInc = incomeQId && alignedDecks[incomeQId] ? alignedDecks[incomeQId][row] : undefined;
+                        const curEdu = eduQId && alignedDecks[eduQId] ? alignedDecks[eduQId][row] : undefined;
+
+                        const ageVal = curAge ? parseAge(curAge) : undefined;
+                        const profVal = curProf ? getProfType(curProf) : undefined;
+                        const incVal = curInc ? getIncomeLevel(curInc) : undefined;
+                        const eduVal = curEdu ? getEduLevel(curEdu) : undefined;
+
+                        let bestIndex = 0;
+                        let bestScore = -Infinity;
+
+                        for (let i = 0; i < remainingOptions.length; i++) {
+                            const opt = remainingOptions[i];
+
+                            let testAge = ageVal;
+                            let testProf = profVal;
+                            let testInc = incVal;
+                            let testEdu = eduVal;
+
+                            if (fieldId === ageQId) testAge = parseAge(opt);
+                            else if (fieldId === profQId) testProf = getProfType(opt);
+                            else if (fieldId === incomeQId) testInc = getIncomeLevel(opt);
+                            else if (fieldId === eduQId) testEdu = getEduLevel(opt);
+
+                            let score = calcScore(testAge, testProf, testInc, testEdu);
+                            score += Math.random(); // tie-breaker randomness
+
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestIndex = i;
+                            }
+                        }
+
+                        // We found the best matching option from remaining pool for this row
+                        alignedDecks[fieldId][row] = remainingOptions[bestIndex];
+                        // Remove chosen from remaining pool to preserve original percentages EXACTLY
+                        remainingOptions.splice(bestIndex, 1);
+                    }
+                });
+
+                // Assign rest
+                Object.keys(unassignedDecks).forEach(id => {
+                    if (![ageQId, profQId, incomeQId, eduQId].includes(id)) {
+                        alignedDecks[id] = [...unassignedDecks[id]];
+                    }
+                });
+            } else {
+                Object.assign(alignedDecks, unassignedDecks);
+            }
+
+            const questionDecks = alignedDecks;
 
             pushLog(`Handshake verified. Establishing secure neural link...`);
             await smartDelay(2000); // Immersion delay
@@ -1254,6 +1433,7 @@ function App() {
                 nameSource,
                 customNamesRaw,
                 customResponses: mergedResponses,
+                aiApplied: dashboardAiApplied,
             });
         }
 
@@ -1263,13 +1443,10 @@ function App() {
         setLaunchProgress(0);
         setIsLaunching(true);
 
-        launchStepTimerRef.current = window.setTimeout(() => {
-            setStep(3);
-        }, LAUNCH_HANDOFF_MS);
-
+        // Single timer: continueLaunchNow handles everything (step change + overlay exit)
         launchRunTimerRef.current = window.setTimeout(() => {
             void continueLaunchNow();
-        }, LAUNCH_OVERLAY_MS);
+        }, LAUNCH_HANDOFF_MS);
     };
 
     const reset = () => {
@@ -1446,10 +1623,14 @@ function App() {
                         if (savedConfig.customResponses) {
                             setCustomResponses(savedConfig.customResponses);
                         }
+                        setDashboardInitialStep(2);
+                        setDashboardAiApplied(savedConfig.aiApplied || false);
                         setShowRestoreModal(false);
                         setSavedConfig(null);
                     }}
                     onStartFresh={() => {
+                        setDashboardInitialStep(1);
+                        setDashboardAiApplied(false);
                         setShowRestoreModal(false);
                         setSavedConfig(null);
                     }}
@@ -1462,7 +1643,7 @@ function App() {
 
             {/* Premium Atmospheric Verification Sequence */}
             {isLaunching && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
+                <div className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden ${transitionPhase === 'exiting' ? 'animate-overlay-exit' : ''}`}>
                     <style>{`
                         @keyframes core-inhale {
                             0% { opacity: 0; scale: 0.95; filter: blur(10px); }
@@ -1484,7 +1665,6 @@ function App() {
                         }
                         .zen-glass {
                             background: rgba(2, 6, 23, 0.85);
-                            backdrop-filter: blur(40px) saturate(200%);
                             border: 1px solid rgba(255, 255, 255, 0.12);
                             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
                         }
@@ -1516,7 +1696,7 @@ function App() {
                     `}</style>
 
                     {/* DARK BACKDROP OVERLAY */}
-                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm z-0 animate-[core-inhale_0.4s_ease-out_forwards]" />
+                    <div className="absolute inset-0 bg-[#020617] z-0 animate-[core-inhale_0.4s_ease-out_forwards]" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(2,6,23,0.8)_100%)] z-[1]" />
 
                     {/* ZEN MINIMALIST HUB */}
@@ -1679,12 +1859,15 @@ function App() {
                                         checkBalanceAndRedirect={checkBalanceAndRedirect}
                                         isLaunching={isLaunching}
                                         error={error || null}
+                                        initialWizardStep={dashboardInitialStep}
+                                        initialAiApplied={dashboardAiApplied}
+                                        onAiAppliedChange={setDashboardAiApplied}
                                     />
                                 )}
 
                                 {/* STEP 3: MISSION CONTROL */}
                                 {step === 3 && analysis && (
-                                    <section className="w-full flex-1 flex flex-col items-center justify-center py-10">
+                                    <section className="w-full flex-1 flex flex-col items-center justify-center py-10 animate-step3-enter">
                                         <MissionControl
                                             logs={automationLogs}
                                             targetCount={targetCount}
@@ -1695,6 +1878,7 @@ function App() {
                                             onBackToConfig={() => {
                                                 setVisualTokenOverride(null);
                                                 setAutomationLogs([]);
+                                                setDashboardInitialStep(3);
                                                 setStep(2);
                                             }}
                                             onNewMission={reset}

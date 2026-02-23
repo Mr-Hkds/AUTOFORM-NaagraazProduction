@@ -761,6 +761,40 @@
         transform: skew(1deg);
       }
     }
+
+    /* --- STEP TRANSITION ANIMATIONS --- */
+
+    @keyframes overlay-fade-out {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .animate-overlay-exit {
+      animation: overlay-fade-out 500ms ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes step3-enter {
+      0% {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-step3-enter {
+      animation: step3-enter 500ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms forwards;
+      opacity: 0;
+    }
   </style>
 
   <link rel="stylesheet" href="/index.css">

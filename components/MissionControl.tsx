@@ -162,12 +162,10 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                 @keyframes digital-inhale {
                     0% { 
                         opacity: 0; 
-                        filter: blur(10px) brightness(1.5);
                         transform: scale(0.95) translateY(20px);
                     }
                     100% { 
                         opacity: 1; 
-                        filter: blur(0px) brightness(1);
                         transform: scale(1) translateY(0);
                     }
                 }
@@ -184,6 +182,77 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                 
                 .spectral-text {
                     animation: spectral-glitch 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                }
+
+                @keyframes digit-roll-in {
+                    0% { transform: translateY(-100%); opacity: 0; filter: blur(4px); }
+                    60% { transform: translateY(8%); opacity: 1; filter: blur(0px); }
+                    100% { transform: translateY(0); opacity: 1; filter: blur(0px); }
+                }
+                @keyframes digit-glow-pulse {
+                    0%, 100% { box-shadow: 0 0 8px rgba(245,158,11,0.05), inset 0 1px 0 rgba(255,255,255,0.03); }
+                    50% { box-shadow: 0 0 16px rgba(245,158,11,0.15), inset 0 1px 0 rgba(255,255,255,0.06); }
+                }
+                @keyframes scanline-down {
+                    0% { transform: translateY(-100%); }
+                    100% { transform: translateY(100%); }
+                }
+                .digit-card {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 28px;
+                    height: 40px;
+                    background: linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(2,6,23,0.95) 100%);
+                    border: 1px solid rgba(245,158,11,0.12);
+                    border-radius: 6px;
+                    overflow: hidden;
+                    animation: digit-glow-pulse 3s ease-in-out infinite;
+                }
+                .digit-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: rgba(245,158,11,0.06);
+                    z-index: 1;
+                }
+                .digit-card::after {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(180deg, transparent 0%, rgba(245,158,11,0.02) 50%, transparent 100%);
+                    animation: scanline-down 4s linear infinite;
+                    pointer-events: none;
+                    z-index: 2;
+                }
+                .digit-value {
+                    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+                    font-size: 20px;
+                    font-weight: 700;
+                    color: #f1f5f9;
+                    text-shadow: 0 0 12px rgba(245,158,11,0.3);
+                    position: relative;
+                    z-index: 3;
+                    line-height: 1;
+                    letter-spacing: -0.02em;
+                }
+                .digit-animate {
+                    animation: digit-roll-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                }
+                .countdown-separator {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 14px;
+                    font-family: ui-monospace, SFMono-Regular, monospace;
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: rgba(245,158,11,0.4);
+                    letter-spacing: 1px;
                 }
             `}</style>
             {/* TOKEN REDUCTION OVERLAY */}
@@ -338,6 +407,36 @@ const MissionControl: React.FC<MissionControlProps> = ({ logs, targetCount, init
                         </div>
                         <h2 className="text-2xl font-serif font-bold text-white tracking-tight spectral-text">{formTitle}</h2>
                         <SystemTelemetry />
+                    </div>
+                </div>
+
+                {/* Countdown Response Counter */}
+                <div className="flex flex-col items-center gap-1.5 mx-4 relative z-10">
+                    <span className="text-[8px] font-mono uppercase tracking-[0.3em] text-slate-500 font-bold">RESPONSES</span>
+                    <div className="flex items-center gap-1">
+                        {/* Current Count Digits */}
+                        {String(currentCount).padStart(String(targetCount).length, '0').split('').map((digit, i) => (
+                            <div key={`curr-${i}`} className="digit-card" style={{ animationDelay: `${i * 0.5}s` }}>
+                                <span className="digit-value digit-animate" key={`${digit}-${currentCount}-${i}`}>
+                                    {digit}
+                                </span>
+                            </div>
+                        ))}
+                        <div className="countdown-separator">/</div>
+                        {/* Target Count Digits */}
+                        {String(targetCount).split('').map((digit, i) => (
+                            <div key={`tgt-${i}`} className="digit-card" style={{ borderColor: 'rgba(100,116,139,0.12)', animationName: 'none' }}>
+                                <span className="digit-value" style={{ color: 'rgba(148,163,184,0.5)', textShadow: 'none' }}>
+                                    {digit}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className={`w-1 h-1 rounded-full ${currentCount > 0 ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]' : 'bg-slate-700'}`} />
+                        <span className={`text-[8px] font-mono uppercase tracking-[0.2em] ${currentCount > 0 ? 'text-amber-500/60' : 'text-slate-700'}`}>
+                            {currentStatus === 'DONE' ? 'COMPLETE' : currentCount > 0 ? 'TRANSMITTING' : 'STANDBY'}
+                        </span>
                     </div>
                 </div>
 

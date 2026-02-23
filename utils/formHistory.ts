@@ -20,6 +20,7 @@ export interface SavedFormConfig {
     customResponses: Record<string, string>;
     /** Map of questionId → option weights array */
     questionWeights: Record<string, number[]>;
+    aiApplied?: boolean;
 }
 
 /** Normalize URL to strip query params and trailing slashes */
@@ -70,6 +71,7 @@ export function saveFormConfig(
         nameSource: 'auto' | 'indian' | 'custom';
         customNamesRaw: string;
         customResponses: Record<string, string>;
+        aiApplied?: boolean;
     }
 ): void {
     const key = normalizeUrl(url);
@@ -93,6 +95,7 @@ export function saveFormConfig(
         customNamesRaw: settings.customNamesRaw,
         customResponses: settings.customResponses,
         questionWeights,
+        aiApplied: settings.aiApplied || false,
     };
 
     try {

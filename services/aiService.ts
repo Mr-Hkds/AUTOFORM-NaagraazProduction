@@ -18,6 +18,55 @@ const DEMOGRAPHIC_PATTERNS: Record<string, number[]> = {
   'YES_NO': [60, 40]                           // Slight positive bias
 };
 
+// --- KEYWORD DETECTORS ---
+const isAgeQuestion = (title: string) =>
+  /\bage\b|age.?group|age.?range|how old/i.test(title);
+const isProfessionQuestion = (title: string) =>
+  /profession|occupation|employment|job\b|work|designation|working|career/i.test(title);
+const isIncomeQuestion = (title: string) =>
+  /income|salary|earn|earning|stipend|pocket.?money|monthly|annual|ctc|pay/i.test(title);
+const isEducationQuestion = (title: string) =>
+  /education|qualification|degree|class|standard|studying|school|college|university/i.test(title);
+
+// --- OPTION CLASSIFIERS ---
+const isUnder18Option = (val: string) =>
+  /under.?18|below.?18|<\s*18|13.?17|14.?17|15.?17|less than 18|minor|child/i.test(val);
+const isYoungAdultOption = (val: string) =>
+  /18.?2[0-5]|18.?to.?2[0-5]|19.?24|18.?24|20.?25/i.test(val);
+const isStudentOption = (val: string) =>
+  /student|school|college|studying|learner|pupil|intern|fresher/i.test(val);
+const isWorkingProfOption = (val: string) =>
+  /working|professional|employed|job|business|self.?employ|entrepreneur|manager|director|executive|engineer|doctor|lawyer/i.test(val);
+const isRetiredOption = (val: string) =>
+  /retire|pension|senior.?citizen/i.test(val);
+const isHighIncomeOption = (val: string) =>
+  /50[\s,]*000|60[\s,]*000|70[\s,]*000|80[\s,]*000|90[\s,]*000|1[\s,]*00[\s,]*000|1[\s,]*lakh|2[\s,]*lakh|5[\s,]*lakh|above.?50|more than 50|[\₹$]\s*50|[\₹$]\s*1[\s,]*00/i.test(val);
+const isLowIncomeOption = (val: string) =>
+  /no.?income|none|zero|nil|below.?5|under.?5|0.?to|less.?than.?10|pocket.?money|below.?10|under.?10|0.?5/i.test(val);
+const isHighEducationOption = (val: string) =>
+  /master|phd|doctorate|post.?grad|m\.?tech|m\.?sc|mba|m\.?a\b|m\.?com|m\.?ed/i.test(val);
+const isSchoolEducationOption = (val: string) =>
+  /school|10th|12th|high.?school|secondary|ssc|hsc|class.?[0-9]|intermediate/i.test(val);
+
+// --- WEIGHT NORMALIZER ---
+const normalizeWeights = (weights: number[]): number[] => {
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (sum === 0) {
+    const equal = Math.floor(100 / weights.length);
+    const remainder = 100 - equal * weights.length;
+    return weights.map((_, i) => equal + (i < remainder ? 1 : 0));
+  }
+  const scaled = weights.map(w => Math.max(1, Math.round((w / sum) * 100)));
+  const diff = 100 - scaled.reduce((a, b) => a + b, 0);
+  if (diff !== 0) {
+    // Add the rounding diff to the largest weight
+    let maxIdx = 0;
+    scaled.forEach((w, i) => { if (w > scaled[maxIdx]) maxIdx = i; });
+    scaled[maxIdx] += diff;
+  }
+  return scaled;
+};
+
 const calculateDemographicWeights = (questionText: string, options: string[]): number[] => {
   const normalizedText = questionText.toUpperCase();
   const optionCount = options.length;
@@ -73,6 +122,109 @@ const calculateDemographicWeights = (questionText: string, options: string[]): n
   return weights;
 };
 
+// --- CROSS-QUESTION DEPENDENCY ENGINE ---
+const applyCrossDependencyLogic = (questions: FormQuestion[]): FormQuestion[] => {
+  // Detect question types
+  const ageQ = questions.find(q => isAgeQuestion(q.title) && q.options.length > 0);
+  const profQ = questions.find(q => isProfessionQuestion(q.title) && q.options.length > 0);
+  const incomeQ = questions.find(q => isIncomeQuestion(q.title) && q.options.length > 0);
+  const eduQ = questions.find(q => isEducationQuestion(q.title) && q.options.length > 0);
+
+  // If no cross-dependency pairs found, return as-is
+  if (!ageQ && !profQ && !incomeQ && !eduQ) return questions;
+
+  // Determine dominant age bracket from age question weights
+  let dominantAgeIsYoung = false;  // Under 18 or 18-24 has high weight
+  let hasUnder18 = false;
+
+  if (ageQ) {
+    const under18Opts = ageQ.options.filter(o => isUnder18Option(o.value));
+    const youngAdultOpts = ageQ.options.filter(o => isYoungAdultOption(o.value));
+    const under18Weight = under18Opts.reduce((s, o) => s + (o.weight ?? 0), 0);
+    const youngWeight = youngAdultOpts.reduce((s, o) => s + (o.weight ?? 0), 0);
+    hasUnder18 = under18Opts.length > 0;
+    dominantAgeIsYoung = (under18Weight + youngWeight) > 40;
+  }
+
+  return questions.map(q => {
+    const opts = q.options.map(o => ({ ...o }));
+
+    // ── AGE ↔ PROFESSION constraints ──
+    if (profQ && q.id === profQ.id && hasUnder18) {
+      opts.forEach(o => {
+        if (isWorkingProfOption(o.value)) {
+          // Suppress working professional for young-dominant surveys
+          o.weight = Math.max(2, Math.round((o.weight ?? 0) * 0.3));
+        }
+        if (isStudentOption(o.value)) {
+          // Boost student option
+          o.weight = Math.max(o.weight ?? 0, 40);
+        }
+        if (isRetiredOption(o.value) && dominantAgeIsYoung) {
+          // Suppress retired if audience is young
+          o.weight = Math.max(1, Math.round((o.weight ?? 0) * 0.15));
+        }
+      });
+      const normalized = normalizeWeights(opts.map(o => o.weight ?? 0));
+      opts.forEach((o, i) => { o.weight = normalized[i]; });
+    }
+
+    // ── AGE ↔ INCOME constraints ──
+    if (incomeQ && q.id === incomeQ.id && hasUnder18) {
+      opts.forEach(o => {
+        if (isHighIncomeOption(o.value)) {
+          // Under-18 cannot have high income
+          o.weight = Math.max(1, Math.round((o.weight ?? 0) * 0.1));
+        }
+        if (isLowIncomeOption(o.value)) {
+          // Boost no/low income
+          o.weight = Math.max(o.weight ?? 0, 35);
+        }
+      });
+      const normalized = normalizeWeights(opts.map(o => o.weight ?? 0));
+      opts.forEach((o, i) => { o.weight = normalized[i]; });
+    }
+
+    // ── PROFESSION ↔ INCOME constraints ──
+    if (incomeQ && q.id === incomeQ.id && profQ) {
+      // If profession question has high student weight, suppress high income
+      const studentWeight = profQ.options
+        .filter(o => isStudentOption(o.value))
+        .reduce((s, o) => s + (o.weight ?? 0), 0);
+      if (studentWeight > 35) {
+        opts.forEach(o => {
+          if (isHighIncomeOption(o.value)) {
+            o.weight = Math.max(1, Math.round((o.weight ?? 0) * 0.2));
+          }
+          if (isLowIncomeOption(o.value)) {
+            o.weight = Math.max(o.weight ?? 0, 30);
+          }
+        });
+        const normalized = normalizeWeights(opts.map(o => o.weight ?? 0));
+        opts.forEach((o, i) => { o.weight = normalized[i]; });
+      }
+    }
+
+    // ── AGE ↔ EDUCATION constraints ──
+    if (eduQ && q.id === eduQ.id && hasUnder18) {
+      opts.forEach(o => {
+        if (isHighEducationOption(o.value)) {
+          // Under-18 can't have post-grad degrees
+          o.weight = Math.max(1, Math.round((o.weight ?? 0) * 0.05));
+        }
+        if (isSchoolEducationOption(o.value)) {
+          // Boost school education
+          o.weight = Math.max(o.weight ?? 0, 40);
+        }
+      });
+      const normalized = normalizeWeights(opts.map(o => o.weight ?? 0));
+      opts.forEach((o, i) => { o.weight = normalized[i]; });
+    }
+
+    return { ...q, options: opts };
+  });
+};
+
 const createBatches = <T>(array: T[], size: number): T[][] => {
   const batches: T[][] = [];
   for (let i = 0; i < array.length; i += size) {
@@ -116,6 +268,7 @@ const generateRealisticData = (count: number, type: string): string[] => {
 };
 
 const applyStatisticalAnalysis = (title: string, questions: FormQuestion[]): FormAnalysis => {
+  // Step 1: Apply per-question demographic weights
   const analyzedQuestions = questions.map(q => {
     const weights = calculateDemographicWeights(q.title, q.options.map(o => o.value));
     return {
@@ -125,11 +278,14 @@ const applyStatisticalAnalysis = (title: string, questions: FormQuestion[]): For
     };
   });
 
+  // Step 2: Apply cross-question dependency logic for common-sense adjustments
+  const finalQuestions = applyCrossDependencyLogic(analyzedQuestions);
+
   return {
     title,
     description: "Statistical Demographic Analysis",
-    questions: analyzedQuestions,
-    aiReasoning: "Advanced demographic distribution models applied based on 100+ survey patterns and statistical research."
+    questions: finalQuestions,
+    aiReasoning: "Advanced demographic distribution models with cross-question dependency analysis applied based on 100+ survey patterns and statistical research."
   };
 };
 
