@@ -55,72 +55,27 @@ export default function AIWeightageBridge({ questions, onApplyWeightages, onClos
         const combinedContext = allTitles + ' ' + allOptions;
 
         const isIndianContext = /₹|rupee|inr|lakh|crore|india|hindi|delhi|mumbai|kolkata|chennai|bangalore|hyderabad|pune/.test(combinedContext);
-        const hasAgeQuestion = /\bage\b|age group|age range|how old/.test(allTitles);
-        const hasProfessionQuestion = /profession|occupation|employment|job|work|designation|working/.test(allTitles);
-        const hasIncomeQuestion = /income|salary|earn|earning|stipend|pocket money|monthly|annual|ctc/.test(allTitles);
-        const hasEducationQuestion = /education|qualification|degree|class|standard|studying|school|college|university/.test(allTitles);
 
         const prompt = `You are a statistical data analyst creating REALISTIC survey response distributions for a form titled "${questions[0]?.title || 'Survey'}".
 
-I will provide a JSON array of questions. Your job is to assign weight distributions and text samples that look like REAL human responses — not robotic or evenly-spread.
+I will provide a JSON array of questions. Your job is to assign weight distributions and text samples that look like REAL human responses.
 
-═══════════════════════════════════════
-CORE RULES
-═══════════════════════════════════════
-1. For questions with 'options' (MULTIPLE_CHOICE, CHECKBOXES, DROPDOWN): Assign weight percentages that sum EXACTLY to 100. Use realistic bell-curve-like distributions — most real surveys cluster around 2-3 dominant options, not spread evenly.
-2. For text-based questions (SHORT_ANSWER, PARAGRAPH): Provide 8-12 diverse sample responses with VARIED length, tone, and phrasing. Some should be brief, some detailed. Include natural imperfections (casual language, abbreviations).
-3. If it's a "Name" field, provide realistic full names.${isIndianContext ? ' Use Indian names (mix of regions — North, South, East, West India).' : ''}
+CORE RULES:
+1. For options (MULTIPLE_CHOICE, CHECKBOXES, DROPDOWN): Assign weight percentages that sum EXACTLY to 100 per question. Use realistic bell-curve distributions — true surveys aren't evenly spread.
+2. For text (SHORT_ANSWER, PARAGRAPH): Provide 8-12 diverse sample responses. Mix short and long phrasing. Add natural imperfections.
+3. If it's a "Name" field, provide realistic full names.
+4. "Yes/No" questions usually lean 55-65% toward "Yes" (acquiescence bias).
+5. "Other" or "Prefer not to say" options should get LOW weight (2-8%).
+6. Don't give any option exactly 0% weight.
+${isIndianContext ? '7. Context is INDIA. Use Indian names, Rupee (₹) income logic, and Indian demographics.' : ''}
 
-═══════════════════════════════════════
-COMMON-SENSE CROSS-QUESTION LOGIC (CRITICAL)
-═══════════════════════════════════════
-Think about the questions TOGETHER, not in isolation. Apply these real-world rules:
-
-${hasAgeQuestion && hasProfessionQuestion ? `AGE ↔ PROFESSION:
-- Under 18 → CANNOT be "Working Professional", "Business Owner", "Self-employed", "Manager", etc. They are STUDENTS (school-age). Weight student/school options to 90%+.
-- 18-24 → Mostly college students, interns, freshers. Working professionals should be LOW (~15-25%).
-- 25-35 → Primarily working professionals. Student weight should be LOW (~5-10%).
-- 55+ or "Senior Citizen" → Mostly retired. Working professional should be LOW.
-` : ''}
-${hasAgeQuestion && hasIncomeQuestion ? `AGE ↔ INCOME:
-- Under 18 → They earn NOTHING or very minimal pocket money. Any income option above ₹10,000-15,000/month (or equivalent) should get near-ZERO weight. "No income" or lowest bracket should dominate (80%+).
-- 18-24 (students) → Mostly no income or low income (internship stipends, part-time). High income brackets (50,000+) should be very rare (<5%).
-- 25-35 → Middle-income brackets should dominate. High income is possible but not majority.
-- 55+ → Pension-range income, moderate brackets.
-` : ''}
-${hasProfessionQuestion && hasIncomeQuestion ? `PROFESSION ↔ INCOME:
-- Students → No income or very low income. CANNOT have professional-level salary.
-- Homemakers/Unemployed → No income or dependent income.
-- Entry-level/Fresher → Low to mid income only.
-- Senior roles/Business owners → Can have higher income brackets.
-` : ''}
-${hasEducationQuestion && hasProfessionQuestion ? `EDUCATION ↔ PROFESSION:
-- School-level education (10th/12th) → Cannot be "Senior Manager", "Director", etc.
-- PhD/Post-graduate → Unlikely to be "Unemployed" (low weight, not zero).
-` : ''}
-${hasAgeQuestion && hasEducationQuestion ? `AGE ↔ EDUCATION:
-- Under 18 → Maximum education is "School" or "12th grade". CANNOT have Bachelor's, Master's, PhD.
-- 18-24 → Mostly "Pursuing graduation" or "Graduate". Post-grad is possible but rare.
-- 35+ → Higher chance of post-graduation, professional degrees.
-` : ''}
-
-GENERAL REALISM RULES:
-- Most people rate satisfaction/experience as 3-4 out of 5 (not 5/5).
-- "Yes/No" questions usually lean 55-65% toward "Yes" (acquiescence bias).
-- "Other" or "Prefer not to say" options should always get LOW weight (2-8%).
-- Don't give any option exactly 0% weight unless it's truly impossible.
-- Gender distributions should roughly mirror real demographics (~48/48/4 for M/F/Other).
-${isIndianContext ? `- This appears to be an INDIAN survey. Use Indian-relevant distributions for income (₹ brackets), education (10th, 12th, B.Tech, MBA, etc.), and cultural context.` : ''}
-
-═══════════════════════════════════════
-OUTPUT FORMAT
-═══════════════════════════════════════
-Return a JSON array of objects:
+OUTPUT FORMAT:
+Return ONLY a valid JSON array of objects:
 - 'id': (string) the original question id
 - 'options': (array of objects, ONLY for selection fields) { "value": string, "weight": number }
 - 'samples': (array of strings, ONLY for text fields) diverse realistic responses
 
-IMPORTANT: Return ONLY valid JSON. No markdown code blocks, no explanation, no intro/outro text. Just the raw JSON array.
+No markdown code blocks, no explanation, no intro text. Just the raw JSON array.
 
 ${JSON.stringify(promptData, null, 2)}`;
 
@@ -222,12 +177,28 @@ ${JSON.stringify(promptData, null, 2)}`;
                                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                                     Paste ChatGPT Response Here
                                 </label>
-                                <button
-                                    onClick={() => setStep(1)}
-                                    className="text-xs text-slate-500 hover:text-indigo-400 transition-colors"
-                                >
-                                    ← Back to Step 1
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const text = await navigator.clipboard.readText();
+                                                // Create a synthetic event object to reuse the existing handlePaste logic
+                                                handlePaste({ target: { value: text } } as React.ChangeEvent<HTMLTextAreaElement>);
+                                            } catch (err) {
+                                                setError("Failed to read clipboard. Please paste manually.");
+                                            }
+                                        }}
+                                        className="text-xs bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md transition-colors font-medium border border-indigo-500/30 active:scale-95 flex items-center gap-1.5"
+                                    >
+                                        <Copy className="w-3 h-3 rotate-180" /> Paste
+                                    </button>
+                                    <button
+                                        onClick={() => setStep(1)}
+                                        className="text-xs text-slate-500 hover:text-indigo-400 transition-colors mt-0.5"
+                                    >
+                                        ← Back
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="relative">
