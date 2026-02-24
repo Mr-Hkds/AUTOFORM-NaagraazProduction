@@ -1251,9 +1251,9 @@ function App() {
                     if (processedCustomResponses[q.id]) {
                         const arr = processedCustomResponses[q.id];
                         value = arr[i % arr.length];
-                    } else if (q.title.toLowerCase().includes('name')) {
+                    } else if (q.title.toLowerCase().includes('name') && (q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH')) {
                         value = namesToUse.length > 0 ? namesToUse[i % namesToUse.length] : "Auto User";
-                    } else if (q.title.toLowerCase().includes('email')) {
+                    } else if (q.title.toLowerCase().includes('email') && (q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH')) {
                         const name = namesToUse.length > 0 ? namesToUse[i % namesToUse.length].toLowerCase().replace(/\s+/g, '.') : `user${i}`;
                         const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'];
                         value = `${name}${Math.floor(Math.random() * 99)}@${domains[Math.floor(Math.random() * domains.length)]}`;
