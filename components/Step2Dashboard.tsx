@@ -50,12 +50,13 @@ const WIZARD_STEPS = [
     { num: 4, label: 'Launch', icon: Rocket },
 ];
 
-const StepIndicator = ({ current }: { current: number }) => (
+const StepIndicator = ({ current, onStepClick }: { current: number; onStepClick?: (step: 1 | 2 | 3 | 4) => void }) => (
     <div className="flex items-center justify-center gap-0.5 sm:gap-1 mb-10 px-2">
         {WIZARD_STEPS.map((s, i) => {
             const isActive = s.num === current;
             const isDone = s.num < current;
             const Icon = s.icon;
+            const isClickable = isDone && onStepClick;
             return (
                 <React.Fragment key={s.num}>
                     {i > 0 && (
@@ -63,17 +64,21 @@ const StepIndicator = ({ current }: { current: number }) => (
                             }`} />
                     )}
                     <div className="flex flex-col items-center gap-2 min-w-[56px]">
-                        <div className={`
-                            w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-400 border relative
+                        <button
+                            type="button"
+                            onClick={() => isClickable && onStepClick(s.num as 1 | 2 | 3 | 4)}
+                            disabled={!isClickable && !isActive}
+                            className={`
+                            w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-400 border relative outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50
                             ${isActive
-                                ? 'bg-gradient-to-br from-amber-600/30 to-amber-800/20 border-amber-500/50 text-amber-400 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
-                                : isDone
-                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                                    : 'bg-white/[0.02] border-white/[0.06] text-white/20'
-                            }
+                                    ? 'bg-gradient-to-br from-amber-600/30 to-amber-800/20 border-amber-500/50 text-amber-400 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
+                                    : isDone
+                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20 hover:scale-105 active:scale-95 cursor-pointer'
+                                        : 'bg-white/[0.02] border-white/[0.06] text-white/20 cursor-default'
+                                }
                         `}>
                             {isDone ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                        </div>
+                        </button>
                         <span className={`text-[9px] font-bold uppercase tracking-[0.15em] transition-colors duration-300 ${isActive ? 'text-amber-400' : isDone ? 'text-amber-500/50' : 'text-white/15'
                             }`}>
                             {s.label}
@@ -313,7 +318,7 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
     }, [handleCompile]);
 
     // Helpers
-    const presets = [5, 10, 25, 50, 75, 100];
+    const presets = [5, 10, 25, 50, 100, 200];
     const isPreset = presets.includes(targetCount);
     const speedLabel = delayMin === 0 ? 'Warp' : delayMin <= 100 ? 'Intensive' : delayMin <= 500 ? 'Efficient' : 'Realistic';
 
@@ -339,6 +344,15 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
         } else {
             setWizardStep(prev => Math.max(prev - 1, 1) as 1 | 2 | 3 | 4);
         }
+    }, [wizardStep, setupMode]);
+
+    const handleStepClick = useCallback((step: 1 | 2 | 3 | 4) => {
+        if (step >= wizardStep) return;
+
+        if (step === 1 && setupMode !== null) {
+            setSetupMode(null);
+        }
+        setWizardStep(step);
     }, [wizardStep, setupMode]);
 
     return (
@@ -380,7 +394,7 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
                 </div>
             )}
 
-            <StepIndicator current={wizardStep} />
+            <StepIndicator current={wizardStep} onStepClick={handleStepClick} />
 
             {/* ═══════════════════════════════════════════════════════ */}
             {/* STEP 1 — SETUP CHOICE                                 */}
@@ -652,14 +666,14 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
                             <input
                                 type="number"
                                 min={1}
-                                max={100}
+                                max={500}
                                 value={customCountActive || !isPreset ? (isNaN(targetCount) ? '' : targetCount) : ''}
                                 placeholder="—"
                                 onClick={() => setCustomCountActive(true)}
                                 onChange={(e) => {
                                     setCustomCountActive(true);
                                     if (e.target.value === '') { setTargetCount(NaN); return; }
-                                    const val = Math.min(Number(e.target.value), 100);
+                                    const val = Math.min(Number(e.target.value), 500);
                                     checkBalanceAndRedirect(val);
                                     setTargetCount(val);
                                 }}
@@ -736,7 +750,7 @@ const Step2Dashboard = React.memo((props: Step2DashboardProps) => {
 
                     <div className="mt-4 p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-[10px] text-slate-600 leading-relaxed font-mono flex items-start gap-2">
                         <ShieldCheck className="w-3 h-3 text-slate-600 mt-0.5 flex-shrink-0" />
-                        <span>To maintain account integrity, avoid exceeding 100 responses per hour per IP.</span>
+                        <span>To maintain account integrity, avoid exceeding 500 responses per session per IP.</span>
                     </div>
 
                     {/* LAUNCH NAV */}

@@ -125,7 +125,7 @@ const RecommendationModal = ({ onClose, onSelect }: { onClose: () => void, onSel
                     {[
                         { label: 'High School / Small Project', range: '35 - 45', val: 42, color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
                         { label: 'Undergraduate / College', range: '115 - 135', val: 127, color: 'bg-amber-500/10 border-amber-500/20 text-amber-500' },
-                        { label: 'Post-Grad / Professional', range: '175 - 195', val: 184, color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
+                        { label: 'Post-Grad / Professional', range: '250 - 350', val: 300, color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
                     ].map((item) => (
                         <button
                             key={item.label}
@@ -511,20 +511,21 @@ function App() {
         clearLaunchSequence();
         setLaunchProgress(100);
 
-        // Phase 1: Mount Step 3 behind the OVERLAY
+        // Phase 1: Mount Step 3 behind the OVERLAY (invisible, opacity:0 via CSS)
         setStep(3);
 
-        // Phase 2: Give the browser 60ms to finish React mounting, layout calc, and painting.
+        // Phase 2: Give the browser 80ms to finish React mounting, layout calc, and painting.
         // This ensures the main thread is completely idle when the opacity animation starts.
-        await new Promise(r => setTimeout(r, 60));
+        await new Promise(r => setTimeout(r, 80));
 
-        // Phase 3: Start exit animation on the overlay
+        // Phase 3: Start exit animation on the overlay (700ms CSS)
+        // Step 3's animate-step3-enter fires immediately (no delay) creating a crossfade
         setTransitionPhase('exiting');
 
-        // Phase 4: Wait for overlay fade-out animation to finish (500ms CSS + 50ms buffer)
-        await new Promise(r => setTimeout(r, 550));
+        // Phase 4: Wait for overlay fade-out animation to finish (700ms CSS + 100ms buffer)
+        await new Promise(r => setTimeout(r, 800));
 
-        // Phase 3: Clean up — remove overlay entirely
+        // Phase 5: Clean up — remove overlay entirely
         setIsLaunching(false);
         setTransitionPhase('idle');
 
@@ -620,11 +621,11 @@ function App() {
     useEffect(() => {
         if (speedMode === 'auto' && analysis) {
             const totalOps = analysis.questions.length * targetCount;
-            let bestDelay = 500; // Rapid (Safe) - previously 1000ms
+            let bestDelay = 200; // Efficient default
 
-            if (totalOps > 200) bestDelay = 0; // Warp Drive
-            else if (totalOps > 100) bestDelay = 50; // Intensive (Turbo)
-            else if (totalOps > 20) bestDelay = 200; // Balanced (Agile)
+            if (totalOps > 500) bestDelay = 0; // Warp Drive
+            else if (totalOps > 200) bestDelay = 50; // Turbo
+            else if (totalOps > 50) bestDelay = 100; // Agile
 
             setDelayMin(bestDelay);
         }
@@ -634,8 +635,8 @@ function App() {
         if (!user || tokenRequestStatus === 'pending_exists') return;
         const finalAmount = requestedAmount !== undefined ? requestedAmount : tokenRequestAmount;
 
-        if (finalAmount < 1 || finalAmount > 500) {
-            setTokenRequestMessage("Amount must be between 1 and 500.");
+        if (finalAmount < 1 || finalAmount > 1000) {
+            setTokenRequestMessage("Amount must be between 1 and 1000.");
             setTokenRequestStatus('error');
             return;
         }
@@ -959,7 +960,7 @@ function App() {
                         cleanup();
                         resolve(true);
                     }
-                }, 2500);
+                }, 1500);
             } catch (e) {
                 console.error("Native Submission Error:", e);
                 cleanup();
@@ -1235,55 +1236,31 @@ function App() {
             const questionDecks = alignedDecks;
 
             pushLog(`Handshake verified. Establishing secure neural link...`);
-            await smartDelay(2000); // Immersion delay
+            await smartDelay(800); // Brief immersion delay
+
+            // --- PRE-GENERATE ALL PAYLOADS ---
+            pushLog(`Pre-generating ${targetCount} optimized payloads...`);
+            const allPayloads: { index: number; data: Record<string, string | string[]> }[] = [];
 
             for (let i = 0; i < targetCount; i++) {
-                // Check for Abort
-                if ((window as any).__AF_STOP_SIGNAL) break;
-
-                pushLog(`Response #${i + 1}: Simulating human reasoning...`);
-                // Use adaptive delay based on user selection
-                const baseDelay = delayMin;
-                const jitter = delayMin === 0 ? 0 : Math.floor(Math.random() * 1000);
-                await smartDelay(baseDelay + jitter);
-
-                pushLog(`Response #${i + 1}: Generating optimized payload...`);
-
-                // Generate values for this specific submission
-                // Initialize submission with hidden fields (CRITICAL for valid submissions)
                 const submissionData: Record<string, string | string[]> = { ...(analysis.hiddenFields || {}) };
 
                 analysis.questions.forEach(q => {
                     let value: string | string[] = "";
 
-                    // 1. Custom/AI overrides
                     if (processedCustomResponses[q.id]) {
                         const arr = processedCustomResponses[q.id];
                         value = arr[i % arr.length];
-                    }
-                    // 2. Names
-                    else if (q.title.toLowerCase().includes('name')) {
+                    } else if (q.title.toLowerCase().includes('name')) {
                         value = namesToUse.length > 0 ? namesToUse[i % namesToUse.length] : "Auto User";
-                    }
-                    // 3. Emails (Added specific handling)
-                    else if (q.title.toLowerCase().includes('email')) {
+                    } else if (q.title.toLowerCase().includes('email')) {
                         const name = namesToUse.length > 0 ? namesToUse[i % namesToUse.length].toLowerCase().replace(/\s+/g, '.') : `user${i}`;
                         const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'];
                         value = `${name}${Math.floor(Math.random() * 99)}@${domains[Math.floor(Math.random() * domains.length)]}`;
-                    }
-                    // 4. Deterministic Deck Usage
-                    else if (questionDecks[q.id]) {
+                    } else if (questionDecks[q.id]) {
                         if (q.type === 'CHECKBOXES') {
-                            // For checkboxes, we might want multiple options. 
-                            // The deck currently gives 1 option per 'slot'. 
-                            // To simulate multiple checks deterministically is complex.
-                            // fallback: We take the main "deck" option, and potentially add 1 more random high-weight option if lucky.
-                            // ideally, the user's weight config for checkboxes implies "Selection Frequency".
-
                             const primaryChoice = questionDecks[q.id][i] || q.options[0].value;
                             const selections = [primaryChoice];
-
-                            // Optional: Add secondary selection based on raw probability
                             if (Math.random() > 0.7) {
                                 const otherOptions = q.options.filter(o => o.value !== primaryChoice && (o.weight || 0) > 20);
                                 if (otherOptions.length > 0) {
@@ -1292,63 +1269,75 @@ function App() {
                             }
                             value = selections;
                         } else {
-                            // Single choice (Radio/Dropdown) - EXACT matching
                             value = questionDecks[q.id][i] || q.options[0].value;
                         }
-                    }
-                    // 5. Fallback
-                    else if (q.options.length > 0) {
+                    } else if (q.options.length > 0) {
                         value = q.options[0].value;
                     }
-
 
                     if (value) submissionData[q.entryId] = value;
                 });
 
-                // FORCE EMAIL INJECTION: Always send a valid email address parameter
-                // This fixes issues where the parser might miss the "Collect Emails" setting
-                // Google Forms simply ignores this if it's not needed, but it's critical if it IS needed.
                 if (!submissionData['emailAddress']) {
                     const name = namesToUse.length > 0 ? namesToUse[i % namesToUse.length].toLowerCase().replace(/\s+/g, '.') : `user${i}`;
                     submissionData['emailAddress'] = `${name}${Math.floor(Math.random() * 99)}@gmail.com`;
                 }
 
-                // --- PRE-SUBMISSION VALIDATION ---
+                // Pre-submission validation
                 const missingFields = analysis.questions
                     .filter(q => q.required && !submissionData[q.entryId])
                     .map(q => q.title);
 
                 if (missingFields.length > 0) {
-                    pushLog(`Response #${i + 1}: VALIDATION ERROR - Missing required fields: ${missingFields.join(', ')}`, 'ERROR', successCount);
-                    // Skip this submission but continue the loop
+                    pushLog(`Response #${i + 1}: VALIDATION ERROR - Missing: ${missingFields.join(', ')}`, 'ERROR', successCount);
                     continue;
                 }
 
-                pushLog(`Response #${i + 1}: Relaying to secure endpoint...`);
-                try {
-                    await executeNativeSubmission(url, submissionData);
-                    successCount++;
-                    pushLog(`Response #${i + 1}: Submission recorded.`, 'RUNNING', successCount);
-                } catch (e: any) {
-                    console.error("Submission failed at index", i, e);
-                    pushLog(`Response #${i + 1}: ${e.message || "Relay failure"}`, 'ERROR', successCount);
-                    // If we have many errors in a row, we might want to stop, but for now we continue the loop
-                    // and let the user see the visual red logs.
-                }
+                allPayloads.push({ index: i, data: submissionData });
+            }
 
-                // --- ADAPTIVE COOLDOWN (Safety Fix) ---
-                // Every 15 submissions, add a "System Cooldown" to bypass IP-based rate limiting
-                // Every 15 submissions, add a "System Cooldown" to bypass IP-based rate limiting
-                if (successCount % 15 === 0 && successCount < targetCount && successCount > 0) {
-                    const cooldownSecs = 5;
-                    pushLog(`IP SAFETY: Automatic cooldown triggered. Waiting ${cooldownSecs}s to prevent blocking...`, 'COOLDOWN');
+            pushLog(`${allPayloads.length} payloads armed. Initiating parallel batch fire...`, 'RUNNING');
+
+            // --- PARALLEL BATCH SUBMISSION ---
+            const BATCH_SIZE = 5; // Fire 5 concurrent requests at a time
+
+            for (let batchStart = 0; batchStart < allPayloads.length; batchStart += BATCH_SIZE) {
+                if ((window as any).__AF_STOP_SIGNAL) break;
+
+                const batchEnd = Math.min(batchStart + BATCH_SIZE, allPayloads.length);
+                const batch = allPayloads.slice(batchStart, batchEnd);
+
+                pushLog(`Batch ${Math.floor(batchStart / BATCH_SIZE) + 1}: Firing ${batch.length} concurrent requests...`);
+
+                // Fire all requests in this batch simultaneously
+                const results = await Promise.allSettled(
+                    batch.map(payload => executeNativeSubmission(url, payload.data))
+                );
+
+                // Process results
+                results.forEach((result, idx) => {
+                    const payloadInfo = batch[idx];
+                    if (result.status === 'fulfilled') {
+                        successCount++;
+                        pushLog(`Response #${payloadInfo.index + 1}: ✓ Delivered`, 'RUNNING', successCount);
+                    } else {
+                        const errMsg = result.reason?.message || 'Relay failure';
+                        pushLog(`Response #${payloadInfo.index + 1}: ${errMsg}`, 'ERROR', successCount);
+                    }
+                });
+
+                // --- ADAPTIVE COOLDOWN ---
+                // Every 50 successful submissions, brief cooldown to stay under radar
+                if (successCount > 0 && successCount % 50 === 0 && batchStart + BATCH_SIZE < allPayloads.length) {
+                    const cooldownSecs = 3;
+                    pushLog(`IP SAFETY: Cooldown triggered (${successCount} sent). Waiting ${cooldownSecs}s...`, 'COOLDOWN');
                     await smartDelay(cooldownSecs * 1000);
-                } else {
-                    // Optimized gap between requests
-                    const gapDelay = delayMin === 0 ? 0 : Math.max(500, delayMin);
-                    const jitter = delayMin === 0 ? 0 : Math.floor(Math.random() * 2000);
-                    await smartDelay(gapDelay + jitter);
+                } else if (delayMin > 0 && batchStart + BATCH_SIZE < allPayloads.length) {
+                    // Inter-batch gap only in non-Warp mode
+                    const gapDelay = Math.max(100, delayMin * 0.3);
+                    await smartDelay(gapDelay);
                 }
+                // In Warp mode (delayMin === 0): no gap at all — pure speed
             }
 
             if (!(window as any).__AF_STOP_SIGNAL) {

@@ -1,0 +1,6 @@
+# robots.txt for AutoForm.AI
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://autoform-ai.vercel.app/sitemap.xml

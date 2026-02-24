@@ -91,14 +91,14 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
                     </h1>
 
                     <p className="text-slate-300 max-w-2xl mx-auto font-mono text-sm md:text-base leading-relaxed tracking-wide animate-fade-in-up px-4 opacity-0 fill-mode-forwards" style={{ animationDelay: '400ms' }}>
-                        Deploy thousands of authentic, scientifically-weighted responses to any Google Form with <span className="text-amber-200 font-bold">human-like latency</span>.
+                        Simulate statistically-valid, demographically-balanced responses for <span className="text-amber-200 font-bold">research, testing &amp; form validation</span> — powered by intelligent weightage distribution.
                     </p>
 
                     <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-4 animate-fade-in-up opacity-0 fill-mode-forwards" style={{ animationDelay: '500ms' }}>
                         {[
                             { icon: Zap, label: "Instant Parse" },
-                            { icon: ShieldCheck, label: "Undetectable" },
-                            { icon: Terminal, label: "Statistically Perfect" }
+                            { icon: ShieldCheck, label: "Research-Grade" },
+                            { icon: Terminal, label: "Statistically Valid" }
                         ].map((feat, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-slate-500 text-xs font-mono uppercase tracking-wider">
                                 <feat.icon className="w-3.5 h-3.5 text-amber-500/50" />
@@ -113,7 +113,7 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
 
                     {/* Floating Label */}
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#0A0A0A] border border-white/10 px-3 py-0.5 rounded-full text-[9px] font-mono text-amber-500 uppercase tracking-widest z-30 shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
-                        Mission Entry Point
+                        Form Analysis Entry
                     </div>
 
                     <div className="relative bg-[#050505] border border-white/10 rounded-3xl p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.7)] group transition-all duration-300 hover:border-amber-500/30 hover:shadow-[0_0_40px_rgba(245,158,11,0.15)] overflow-hidden">
@@ -137,7 +137,7 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
                                         onAnalyze();
                                     }
                                 }}
-                                placeholder="Paste target URL..."
+                                placeholder="https://docs.google.com/forms/d/e/1FAIpQL..."
                                 className="flex-1 bg-transparent border-none text-white text-base md:text-lg placeholder:text-slate-700/80 focus:outline-none focus:ring-0 font-mono tracking-tight w-full"
                                 spellCheck={false}
                             />
@@ -169,7 +169,7 @@ const HeroSection: React.FC<HeroSectionProps> = React.memo(({ url, setUrl, onAna
                                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <span>Initialize</span>
+                                    <span>Analyse Form</span>
                                     <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                 </>
                             )}

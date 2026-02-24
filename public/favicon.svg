@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#050505" rx="120" />
+  <path d="M256 120 L140 380 h45 l28 -80 h86 l28 80 h45 L256 120 Z m-26 140 l26 -75 l26 75 h-52 Z" fill="#D4AF37" />
+  <!-- subtle circuit accent -->
+  <path d="M256 120 L256 60 M100 256 L160 256 M412 256 L352 256 M256 392 L256 452" stroke="#8A701C" stroke-width="8" stroke-linecap="round" />
+</svg>
