@@ -1243,7 +1243,9 @@ function App() {
                     if (value) submissionData[q.entryId] = value;
                 });
 
-                if (!submissionData['emailAddress']) {
+                // Only append emailAddress if the form natively expects an emailAddress field.
+                // formParser adds a virtual 'emailAddress' question if FB_PUBLIC_LOAD_DATA indicates collection is enabled.
+                if (analysis.questions.some(q => q.entryId === 'emailAddress') && !submissionData['emailAddress']) {
                     const name = namesToUse.length > 0 ? namesToUse[i % namesToUse.length].toLowerCase().replace(/\s+/g, '.') : `user${i}`;
                     submissionData['emailAddress'] = `${name}${Math.floor(Math.random() * 99)}@gmail.com`;
                 }
