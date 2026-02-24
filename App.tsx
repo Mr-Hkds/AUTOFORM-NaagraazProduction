@@ -305,6 +305,21 @@ const isEduQuestion = (title: string, options: any[]) => {
     });
 };
 
+const isGenderQuestion = (title: string, options: any[]) => {
+    const t = (title || "").toLowerCase();
+    if (!/gender|sex\b|male|female/i.test(t)) return false;
+    return options.some((opt: any) => {
+        const val = typeof opt === 'string' ? opt : opt.value;
+        return /male|female|other|binary|trans|prefer not to say/i.test(val || "");
+    });
+};
+
+const isPhoneQuestion = (title: string) => {
+    const t = (title || "").toLowerCase();
+    if (/manager|boss|friend|spouse|father|mother|parent|partner|child/i.test(t)) return false;
+    return /phone|mobile|contact.?number|whatsapp|tele\.?no|telephone/i.test(t);
+};
+
 // DELETED: LoadingState replaced by LoadingScreen component
 
 function App() {
@@ -841,7 +856,7 @@ function App() {
             // Preserve existing
             analysis.questions.forEach(q => {
                 const isTextField = q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH';
-                if (isTextField && !isPersonalName(q.title) && !isPersonalEmail(q.title)) {
+                if (isTextField && !isPersonalName(q.title) && !isPersonalEmail(q.title) && !isPhoneQuestion(q.title)) {
                     if (!customResponses[q.id]) initial[q.id] = "";
                 }
             });
@@ -1142,8 +1157,11 @@ function App() {
             const eduQId = analysis.questions.find(q =>
                 unassignedDecks[q.id] && isEduQuestion(q.title, q.options)
             )?.id;
+            const genderQId = analysis.questions.find(q =>
+                unassignedDecks[q.id] && isGenderQuestion(q.title, q.options)
+            )?.id;
 
-            const hasDemographics = ageQId || profQId || incomeQId || eduQId;
+            const hasDemographics = ageQId || profQId || incomeQId || eduQId || genderQId;
 
             if (hasDemographics) {
                 const parseAge = (v: string) => {
@@ -1307,6 +1325,9 @@ function App() {
                         const name = namesToUse.length > 0 ? namesToUse[i % namesToUse.length].toLowerCase().replace(/\s+/g, '.') : `user${i}`;
                         const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'];
                         value = `${name}${Math.floor(Math.random() * 99)}@${domains[Math.floor(Math.random() * domains.length)]}`;
+                    } else if (isPhoneQuestion(q.title) && (q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH')) {
+                        const prefix = ['9', '8', '7', '6'][Math.floor(Math.random() * 4)];
+                        value = prefix + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
                     } else if (questionDecks[q.id]) {
                         if (q.type === 'CHECKBOXES') {
                             const primaryChoice = questionDecks[q.id][i] || q.options[0].value;
@@ -1452,11 +1473,12 @@ function App() {
             return;
         }
 
-        // VALIDATION: Ensure required text fields have content (excluding names/emails which are handled by generator)
+        // VALIDATION: Ensure required text fields have content (excluding names/emails/phones which are handled by generator)
         const requiredTextFields = analysis?.questions.filter(q =>
             (q.type === 'SHORT_ANSWER' || q.type === 'PARAGRAPH') &&
             !isPersonalName(q.title) &&
             !isPersonalEmail(q.title) &&
+            !isPhoneQuestion(q.title) &&
             q.required
         );
 

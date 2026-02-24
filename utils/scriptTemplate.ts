@@ -250,6 +250,21 @@ export const generateAutomationScript = (
     if (/company|school|university|business|organization|startup|manager|boss|friend|spouse|father|mother|parent|partner|child/i.test(t)) return false;
     return /\bemail\b|e-mail|mail.id|mail.address|email.id/i.test(t);
   };
+
+  const isPhoneQuestion = (title) => {
+    const t = (title || "").toLowerCase();
+    if (/manager|boss|friend|spouse|father|mother|parent|partner|child/i.test(t)) return false;
+    return /phone|mobile|contact.?number|whatsapp|tele\.?no|telephone/i.test(t);
+  };
+
+  const isGenderQuestion = (title, options) => {
+    const t = (title || "").toLowerCase();
+    if (!/gender|sex\b|male|female/i.test(t)) return false;
+    return options.some((opt) => {
+        const val = typeof opt === 'string' ? opt : opt.value;
+        return /male|female|other|binary|trans|prefer not to say/i.test(val || "");
+    });
+  };
   
   const selectWeighted = (options) => {
     if (!options || options.length === 0) return { value: "" };
@@ -546,13 +561,20 @@ export const generateAutomationScript = (
              
              // 3. EMAIL FIELDS: Fill with random email if requested
              if (!val && isPersonalEmail(itemTitleRaw)) {
-                 const baseName = CONFIG.names.length > 0 ? CONFIG.names[runIndex % CONFIG.names.length].toLowerCase().replace(/\s+/g, '.') : `user${ runIndex } `;
+                 const baseName = CONFIG.names.length > 0 ? CONFIG.names[runIndex % CONFIG.names.length].toLowerCase().replace(/\s+/g, '.') : 'user' + runIndex;
                  const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'];
-                 val = `${ baseName }${ Math.floor(Math.random() * 99) } @${ domains[Math.floor(Math.random() * domains.length)] } `;
+                 val = baseName + Math.floor(Math.random() * 99) + '@' + domains[Math.floor(Math.random() * domains.length)];
+             }
+
+             // 4. PHONE FIELDS: Fill with random number
+             if (!val && isPhoneQuestion(itemTitleRaw)) {
+                 const prefix = ['9', '8', '7', '6'][Math.floor(Math.random() * 4)];
+                 const tail = Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+                 val = prefix + tail;
              }
              
-             // 4. SKIP ALL OTHER TEXT FIELDS
-             // If no custom response and not a name/email field, leave blank
+             // 5. SKIP ALL OTHER TEXT FIELDS
+             // If no custom response and not a name/email/phone field, leave blank
 
 
              if (val) {
