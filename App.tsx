@@ -890,34 +890,26 @@ function App() {
             try {
                 const submitUrl = formUrl.split('?')[0].replace(/\/viewform$/, '/formResponse'); // Action URL
 
-                // 1. Fetch the form first to get all exact hidden fields required (fbzx, fvv, partialResponse, etc)
-                const formHtml = await fetch(formUrl).then(res => res.text());
-
                 // Use URLSearchParams for application/x-www-form-urlencoded
                 const formData = new URLSearchParams();
 
-                // 2. Extract and append all hidden fields Google expects (this prevents 400 errors)
-                const hiddenFields = ['fbzx', 'fvv', 'pageHistory', 'draftResponse', 'partialResponse'];
-                for (const field of hiddenFields) {
-                    const regex = new RegExp(`name="${field}"\\s+value="([^"]*)"`);
-                    const match = formHtml.match(regex);
-                    if (match) {
-                        formData.append(field, match[1]);
-                    }
-                }
+                const SPECIAL_KEYS = ['emailAddress', 'fvv', 'draftResponse', 'pageHistory', 'fbzx', 'partialResponse', 'submissionTimestamp'];
 
-                // 3. Append user answers (data payload)
                 Object.entries(data).forEach(([key, value]) => {
-                    // Skip keys that we already extracted via hidden fields dynamically
-                    if (hiddenFields.includes(key)) return;
-
-                    const isSpecial = key.includes('entry.') || key === 'emailAddress' || key === 'submissionTimestamp';
+                    const isSpecial = key.includes('entry.') || SPECIAL_KEYS.includes(key);
                     const inputName = isSpecial ? key : `entry.${key}`;
 
                     if (Array.isArray(value)) {
-                        value.forEach(v => formData.append(inputName, v));
+                        value.forEach(v => {
+                            formData.append(inputName, v);
+                        });
                     } else {
-                        formData.append(inputName, value as string);
+                        let strValue = value as string;
+                        // Decode HTML entities that typically escape quotes in hidden fields (like partialResponse)
+                        if (isSpecial && typeof strValue === 'string') {
+                            strValue = strValue.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                        }
+                        formData.append(inputName, strValue);
                     }
                 });
 
