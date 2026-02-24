@@ -890,27 +890,36 @@ function App() {
             try {
                 const submitUrl = formUrl.split('?')[0].replace(/\/viewform$/, '/formResponse'); // Action URL
 
+                // 1. Fetch the form first to get all exact hidden fields required (fbzx, fvv, partialResponse, etc)
+                const formHtml = await fetch(formUrl).then(res => res.text());
+
                 // Use URLSearchParams for application/x-www-form-urlencoded
                 const formData = new URLSearchParams();
 
+                // 2. Extract and append all hidden fields Google expects (this prevents 400 errors)
+                const hiddenFields = ['fbzx', 'fvv', 'pageHistory', 'draftResponse', 'partialResponse'];
+                for (const field of hiddenFields) {
+                    const regex = new RegExp(`name="${field}"\\s+value="([^"]*)"`);
+                    const match = formHtml.match(regex);
+                    if (match) {
+                        formData.append(field, match[1]);
+                    }
+                }
+
+                // 3. Append user answers (data payload)
                 Object.entries(data).forEach(([key, value]) => {
-                    const SPECIAL_KEYS = ['emailAddress', 'fvv', 'draftResponse', 'pageHistory', 'fbzx', 'partialResponse', 'submissionTimestamp'];
-                    const isSpecial = key.includes('entry.') || SPECIAL_KEYS.includes(key);
+                    // Skip keys that we already extracted via hidden fields dynamically
+                    if (hiddenFields.includes(key)) return;
+
+                    const isSpecial = key.includes('entry.') || key === 'emailAddress' || key === 'submissionTimestamp';
                     const inputName = isSpecial ? key : `entry.${key}`;
 
                     if (Array.isArray(value)) {
-                        value.forEach(v => {
-                            formData.append(inputName, v);
-                        });
+                        value.forEach(v => formData.append(inputName, v));
                     } else {
                         formData.append(inputName, value as string);
                     }
                 });
-
-                // Add page history to ensure submission works for multi-page forms
-                const maxPageIndex = analysis?.questions.reduce((max, q) => Math.max(max, q.pageIndex || 0), 0) || 0;
-                const pageHistory = Array.from({ length: maxPageIndex + 1 }, (_, i) => i).join(',');
-                formData.append('pageHistory', pageHistory);
 
                 // Send silently using no-cors. 
                 // Google Forms will process it, but the browser won't let us read the success response.
