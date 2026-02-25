@@ -44,11 +44,8 @@ const Header: React.FC<HeaderProps> = React.memo(({ reset, step, version, user, 
                         </span>
                         {/* Two-line studio credit */}
                         <div className="hidden sm:flex flex-col gap-0">
-                            <span className="text-[7px] text-slate-500 font-mono uppercase tracking-[0.22em] leading-tight">
-                                Form Intelligence
-                            </span>
                             <span className="text-[7px] text-amber-500/70 font-mono uppercase tracking-[0.15em] leading-tight">
-                                Bharamratri Studio
+                                 The Bharamratri Production
                             </span>
                         </div>
                     </div>
