@@ -1,6 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#050505" rx="120" />
-  <path d="M256 120 L140 380 h45 l28 -80 h86 l28 80 h45 L256 120 Z m-26 140 l26 -75 l26 75 h-52 Z" fill="#D4AF37" />
-  <!-- subtle circuit accent -->
-  <path d="M256 120 L256 60 M100 256 L160 256 M412 256 L352 256 M256 392 L256 452" stroke="#8A701C" stroke-width="8" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Black background -->
+  <rect width="64" height="64" rx="14" fill="#050505"/>
+
+  <!-- Subtle emerald outer glow ring -->
+  <rect width="64" height="64" rx="14" fill="none" stroke="#10B981" stroke-width="1" opacity="0.25"/>
+
+  <!-- Bold geometric Z shape (precision-cut) -->
+  <path d="M14 14 H50 L14 50 H50" stroke="white" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter" fill="none"/>
+
+  <!-- Emerald accent slash through the diagonal -->
+  <line x1="17" y1="47" x2="47" y2="17" stroke="#10B981" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
 </svg>

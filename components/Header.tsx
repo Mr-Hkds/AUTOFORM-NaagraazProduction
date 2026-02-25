@@ -24,30 +24,33 @@ const Header: React.FC<HeaderProps> = React.memo(({ reset, step, version, user, 
                     className="flex items-center gap-3 cursor-pointer group"
                     onClick={reset}
                 >
-                    {/* Synaptic Loop Logo */}
+                    {/* Z Lettermark Icon */}
                     <div className="relative w-10 h-10 flex items-center justify-center">
                         <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative z-10 w-full h-full bg-gradient-to-br from-slate-900 to-black rounded-xl border border-white/10 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-500">
-                            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-emerald-400" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" className="opacity-50" />
-                                <path d="M12 6a6 6 0 0 0-6 6c0 3.31 2.69 6 6 6s6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" className="group-hover:text-amber-400 transition-colors duration-500" />
-                                <circle cx="12" cy="12" r="2" className="fill-emerald-500/20 stroke-emerald-400 group-hover:fill-amber-500/20 group-hover:stroke-amber-400 transition-colors duration-500" />
+                        <div className="relative z-10 w-full h-full bg-black rounded-xl border border-white/10 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-500">
+                            <svg viewBox="0 0 64 64" fill="none" className="w-7 h-7">
+                                <path d="M14 14 H50 L14 50 H50" stroke="white" strokeWidth="7" strokeLinecap="square" strokeLinejoin="miter" fill="none" />
+                                <line x1="17" y1="47" x2="47" y2="17" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
                             </svg>
                             {/* Sheen */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 animate-shimmer-flow pointer-events-none" />
                         </div>
                     </div>
 
-                    <div className="flex flex-col justify-center">
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-serif font-bold text-lg tracking-tight leading-none text-white group-hover:text-emerald-100 transition-colors">
-                                Zerviq
-                            </span>
-                            <span className="w-1 h-1 rounded-full bg-emerald-500/80 mt-0.5" />
-                        </div>
-                        <span className="text-[7px] text-slate-600 font-mono uppercase tracking-[0.25em] hidden sm:block mt-0.5">
-                            Form Intelligence
+                    <div className="flex flex-col justify-center gap-0.5">
+                        {/* Primary brand name */}
+                        <span className="font-serif font-bold text-lg tracking-tight leading-none text-white group-hover:text-emerald-100 transition-colors">
+                            Zerviq
                         </span>
+                        {/* Two-line studio credit */}
+                        <div className="hidden sm:flex flex-col gap-0">
+                            <span className="text-[7px] text-slate-500 font-mono uppercase tracking-[0.22em] leading-tight">
+                                Form Intelligence
+                            </span>
+                            <span className="text-[7px] text-amber-500/70 font-mono uppercase tracking-[0.15em] leading-tight">
+                                Bharamratri Studio
+                            </span>
+                        </div>
                     </div>
                 </div>
 
